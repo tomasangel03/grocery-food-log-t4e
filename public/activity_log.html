@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity Log — PantryLog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/global.css">
+<style>
+/* ===== Activity Log — page-specific styles ===== */
+
+/* Page header */
+.al-page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.al-page-head h1{font:700 24px var(--font-head);letter-spacing:-0.02em;color:var(--color-text);margin:0 0 4px}
+.al-page-desc{font:400 13.5px var(--font-body);color:var(--color-text-secondary);line-height:1.6}
+.al-admin-pill{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--font-body);color:#027a48;background:#ecfdf3;border-radius:999px;padding:3px 12px;white-space:nowrap}
+
+/* Filter bar */
+.al-filter-bar{display:flex;align-items:flex-end;gap:16px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:12px;box-shadow:var(--shadow-card);padding:16px 20px;margin-bottom:24px;flex-wrap:wrap}
+.al-filter-bar .field{margin:0;flex:1;min-width:160px}
+.al-filter-bar label{display:block;font:500 12px var(--font-body);color:var(--color-text-secondary);margin-bottom:6px}
+.al-filter-bar select{width:100%}
+.al-filter-actions{display:flex;gap:8px}
+
+/* Timeline card head */
+.al-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px}
+.al-card-head h3{font:600 14px var(--font-head);color:var(--color-text);margin:0 0 2px}
+.al-card-desc{font:400 12.5px var(--font-body);color:var(--color-text-secondary)}
+.al-count{font:500 12px var(--font-body);color:var(--color-text-secondary);background:#f2f4f7;border-radius:999px;padding:2px 10px;white-space:nowrap}
+
+/* Day group label */
+.day-label{font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.06em;color:var(--color-text-muted);padding:20px 0 6px 2px}
+.day-label:first-of-type{padding-top:12px}
+
+/* Timeline */
+.activity-timeline{position:relative}
+.timeline-item{position:relative;display:flex;gap:14px;padding:14px 0 14px 2px;border-bottom:1px solid #eef2f5;transition:background 150ms ease}
+.timeline-item:last-child{border-bottom:0}
+.timeline-item:hover{background:#f8fafb}
+
+/* Dot rail */
+.timeline-dot{position:relative;width:32px;height:32px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.timeline-dot i{font-size:13px}
+.timeline-dot.add{background:#ecfdf3;color:#027a48}
+.timeline-dot.consume{background:#e6f3f1;color:var(--color-primary)}
+.timeline-dot.delete{background:#fef3f2;color:#b42318}
+.timeline-dot.update{background:#fffaeb;color:#b54708}
+.timeline-dot.login{background:#f2f4f7;color:#344054}
+
+/* Timeline content */
+.timeline-content{flex:1;min-width:0}
+.timeline-title{font:500 13.5px var(--font-body);color:var(--color-text);line-height:1.5}
+.timeline-title b{font-weight:600}
+.timeline-meta{display:flex;align-items:center;gap:8px;font:400 12px var(--font-body);color:var(--color-text-muted);margin-top:3px;flex-wrap:wrap}
+.timeline-meta .meta-dot{width:3px;height:3px;border-radius:999px;background:#d0d5dd;display:inline-block}
+.timeline-tag{display:inline-flex;align-items:center;font:500 11px var(--font-body);color:var(--color-text-secondary);background:#f2f4f7;border-radius:999px;padding:1px 8px}
+
+/* Item right side (time) */
+.timeline-time{font:400 12px var(--font-body);color:var(--color-text-muted);white-space:nowrap;margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* Empty state */
+.al-empty{display:none;flex-direction:column;align-items:center;text-align:center;padding:56px 24px}
+.al-empty.show{display:flex}
+.al-empty .empty-icon{width:44px;height:44px;border-radius:999px;background:#f2f4f7;color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.al-empty h4{font:600 14px var(--font-head);color:var(--color-text);margin:0 0 4px}
+.al-empty p{font:400 13px var(--font-body);color:var(--color-text-secondary);max-width:320px;line-height:1.6}
+
+/* Responsive */
+@media (max-width:1024px){
+  .al-filter-bar .field{min-width:140px}
+}
+@media (max-width:768px){
+  .al-page-head{flex-direction:column;align-items:flex-start}
+  .al-filter-bar{flex-direction:column;align-items:stretch}
+  .al-filter-actions{justify-content:flex-end}
+  .timeline-time{display:none}
+}
+</style>
+</head>
+<body data-page="activity_log">
+<div class="activity-log-page">
+  <div class="app-shell" id="appShell">
+    <!-- sidebar + topbar injected by shell.js -->
+    <main class="page-main">
+      <div class="page-body">
+
+        <!-- Page header -->
+        <div class="al-page-head">
+          <div>
+            <h1>Activity Log</h1>
+            <div class="al-page-desc">Read-only audit trail of every action taken in the household — shopping trips, consumption, and member changes.</div>
+          </div>
+          <span class="al-admin-pill">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            Admin only
+          </span>
+        </div>
+
+        <!-- Filter bar -->
+        <section class="al-filter-bar" aria-label="Activity filters">
+          <div class="field">
+            <label for="act_filter_user">Filter by user</label>
+            <select id="act_filter_user">
+              <option value="all">All members</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="act_filter_type">Filter by action type</label>
+            <select id="act_filter_type">
+              <option value="all">All actions</option>
+              <option value="add_shopping">Shopping trip added</option>
+              <option value="consume_item">Item consumed</option>
+              <option value="edit_item">Item edited</option>
+              <option value="remove_item">Item removed</option>
+              <option value="add_user">Member added</option>
+              <option value="user_registered">Self-registration</option>
+              <option value="update_role">Role updated</option>
+              <option value="deactivate_user">Member deactivated</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="act_filter_range">Date range</label>
+            <select id="act_filter_range">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+          <div class="al-filter-actions">
+            <button class="btn btn-secondary" id="al_reset_btn" type="button">
+              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+              Reset
+            </button>
+          </div>
+        </section>
+
+        <!-- Timeline card -->
+        <section class="card">
+          <div class="al-card-head">
+            <div>
+              <h3>Recent activity</h3>
+              <div class="al-card-desc">Chronological, most recent first. Entries cannot be edited or deleted.</div>
+            </div>
+            <span class="al-count" id="al_count" aria-live="polite">—</span>
+          </div>
+
+          <div class="activity-timeline" id="act_list" role="list" aria-label="Activity entries"></div>
+
+          <div class="al-empty" id="al_empty">
+            <div class="empty-icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></div>
+            <h4>No activity found</h4>
+            <p>No entries match the current filters. Try widening the date range or clearing the user/action filters.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return; // guard redirected to login
+
+  // rule: Only Admin Views Activity Log — Members are bounced to the dashboard.
+  if (Shell.user.role !== 'admin') {
+    window.location.replace('dashboard.html');
+    return;
+  }
+
+  // action type → dot class + icon + tag label
+  var TYPE_META = {
+    add_shopping:    { cls: 'add',     icon: 'fa-plus',       tag: 'Shopping trip' },
+    consume_item:    { cls: 'consume', icon: 'fa-check',      tag: 'Consume' },
+    edit_item:       { cls: 'update',  icon: 'fa-pen',        tag: 'Item edit' },
+    remove_item:     { cls: 'delete',  icon: 'fa-trash-can',  tag: 'Item removed' },
+    add_user:        { cls: 'add',     icon: 'fa-user-plus',  tag: 'Member added' },
+    user_registered: { cls: 'login',   icon: 'fa-user-check', tag: 'Self-registration' },
+    update_role:     { cls: 'update',  icon: 'fa-user-gear',  tag: 'Role update' },
+    deactivate_user: { cls: 'delete',  icon: 'fa-user-slash', tag: 'Deactivation' }
+  };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function dayLabel(d) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var that = new Date(d); that.setHours(0, 0, 0, 0);
+    var diff = (today - that) / 86400000;
+    var pretty = that.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    if (diff === 0) return 'Today — ' + pretty;
+    if (diff === 1) return 'Yesterday — ' + pretty;
+    return pretty;
+  }
+  function timeOf(d) {
+    return new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // ---- Populate user filter from /v1/users ----
+  authFetch('v1/users')
+    .then(function (res) { return res.ok ? res.json() : { users: [] }; })
+    .then(function (data) {
+      var sel = document.getElementById('act_filter_user');
+      (data.users || []).forEach(function (u) {
+        var opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+        sel.appendChild(opt);
+      });
+    })
+    .catch(function () { /* filter degrades to All members */ });
+
+  // ---- Load entries from GET /v1/activity-log ----
+  function loadActivity() {
+    var params = ['limit=200'];
+    var userId = document.getElementById('act_filter_user').value;
+    var actionType = document.getElementById('act_filter_type').value;
+    if (userId && userId !== 'all') params.push('userId=' + encodeURIComponent(userId));
+    if (actionType && actionType !== 'all') params.push('actionType=' + encodeURIComponent(actionType));
+
+    authFetch('v1/activity-log?' + params.join('&'))
+      .then(function (res) {
+        if (res.status === 403) {
+          // Member somehow reached this page — send them back to the dashboard.
+          window.location.replace('dashboard.html');
+          throw new Error('forbidden');
+        }
+        return res.json();
+      })
+      .then(function (data) { render(data.entries || []); })
+      .catch(function (err) {
+        if (err && err.message === 'forbidden') return;
+        console.error('activity log failed', err);
+        document.getElementById('act_list').innerHTML =
+          '<div class="al-card-desc" style="padding:20px 0">Could not load the activity log.</div>';
+      });
+  }
+
+  function render(entries) {
+    // Client-side date range (server has no range param on this endpoint)
+    var range = document.getElementById('act_filter_range').value;
+    if (range !== 'all') {
+      var cutoff = Date.now() - Number(range) * 86400000;
+      entries = entries.filter(function (e) {
+        return new Date(e.created_at).getTime() >= cutoff;
+      });
+    }
+
+    document.getElementById('al_count').textContent =
+      entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies');
+
+    var list = document.getElementById('act_list');
+    var empty = document.getElementById('al_empty');
+    if (entries.length === 0) {
+      list.innerHTML = '';
+      empty.classList.add('show');
+      return;
+    }
+    empty.classList.remove('show');
+
+    var html = '';
+    var lastDay = null;
+    entries.forEach(function (e) {
+      var day = new Date(e.created_at).toDateString();
+      if (day !== lastDay) {
+        html += '<div class="day-label">' + esc(dayLabel(e.created_at)) + '</div>';
+        lastDay = day;
+      }
+      var meta = TYPE_META[e.action_type] || { cls: 'login', icon: 'fa-circle-info', tag: e.action_type };
+      var who = ((e.first_name || '') + ' ' + (e.last_name || '')).trim() || e.username;
+      html +=
+        '<div class="timeline-item" role="listitem" data-user="' + esc(e.user_id) + '" data-type="' + esc(e.action_type) + '">' +
+          '<div class="timeline-dot ' + meta.cls + '" aria-hidden="true"><i class="fa-solid ' + meta.icon + '"></i></div>' +
+          '<div class="timeline-content">' +
+            '<div class="timeline-title"><b>' + esc(who) + '</b> — ' + esc(e.action_description) + '</div>' +
+            '<div class="timeline-meta"><span>@' + esc(e.username) + '</span><span class="meta-dot"></span>' +
+              '<span class="timeline-tag">' + esc(meta.tag) + '</span></div>' +
+          '</div>' +
+          '<div class="timeline-time">' + esc(timeOf(e.created_at)) + '</div>' +
+        '</div>';
+    });
+    list.innerHTML = html;
+  }
+
+  // ---- Filter events ----
+  document.getElementById('act_filter_user').addEventListener('change', loadActivity);
+  document.getElementById('act_filter_type').addEventListener('change', loadActivity);
+  document.getElementById('act_filter_range').addEventListener('change', loadActivity);
+  document.getElementById('al_reset_btn').addEventListener('click', function () {
+    document.getElementById('act_filter_user').value = 'all';
+    document.getElementById('act_filter_type').value = 'all';
+    document.getElementById('act_filter_range').value = '30';
+    loadActivity();
+  });
+
+  loadActivity();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Grocery Shopping — PantryLog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/global.css">
+<style>
+/* ===== Add Grocery page-specific styles ===== */
+.add-grocery-page .page-body{display:flex;flex-direction:column;gap:24px;max-width:960px;}
+
+.page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.page-heading h1{font:700 24px var(--font-head);letter-spacing:-0.02em;}
+.page-heading .page-desc{font:400 13.5px var(--font-body);color:var(--color-text-secondary);margin-top:4px;line-height:1.6;}
+
+/* Trip details grid: date, store, cost */
+.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.form-grid .field{margin:0;}
+
+/* Section label */
+.section-label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.section-label h3{font:600 15px var(--font-head);}
+.section-label .card-desc{margin-top:2px;}
+
+/* Repeatable item rows */
+.item-rows{display:flex;flex-direction:column;gap:10px;}
+.item-row{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) auto;
+  gap:10px;align-items:end;
+  padding:12px;border:1px solid var(--color-border);border-radius:var(--radius-md);
+  background:var(--color-surface-2);
+}
+.item-row .field{margin:0;}
+.item-row .field label{font-size:11.5px;}
+.remove-item-btn{
+  border:1px solid var(--color-border);background:var(--color-surface);
+  color:var(--color-danger);border-radius:var(--radius-sm);
+  width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+  transition:background .12s;
+}
+.remove-item-btn:hover{background:#fef3f2;}
+.add-item-btn{
+  align-self:flex-start;margin-top:12px;
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px dashed var(--color-primary);background:transparent;
+  color:var(--color-primary);border-radius:var(--radius-sm);
+  padding:9px 16px;font:600 13px var(--font-body);
+  transition:background .12s;
+}
+.add-item-btn:hover{background:var(--color-primary-soft);}
+
+/* Footer actions */
+.form-actions{display:flex;justify-content:flex-end;gap:12px;padding-top:4px;}
+
+@media (max-width:1024px){
+  .item-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto;}
+  .item-row .remove-item-btn{justify-self:end;}
+}
+@media (max-width:768px){
+  .form-grid{grid-template-columns:1fr;}
+  .item-row{grid-template-columns:1fr;}
+  .form-actions{flex-direction:column-reverse;}
+  .form-actions .btn{width:100%;}
+}
+</style>
+</head>
+<body data-page="add_grocery">
+<div class="add-grocery-page">
+  <div class="app-shell" id="appShell">
+    <!-- sidebar + topbar injected by shell.js -->
+    <main class="page-main">
+      <div class="page-body">
+
+        <!-- ===== Heading (add_back) ===== -->
+        <section class="page-heading">
+          <div>
+            <h1>Add Grocery Shopping</h1>
+            <div class="page-desc">Log a shopping trip with all its food items. Every item starts as available inventory.</div>
+          </div>
+          <a class="btn btn-ghost" id="add_back" href="dashboard.html">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            Back to Dashboard
+          </a>
+        </section>
+
+        <form id="tripForm" novalidate>
+          <div class="form-error" id="formError"></div>
+
+          <!-- ===== Trip details: date, store, cost ===== -->
+          <div class="card" style="margin-bottom:24px;">
+            <div class="card-head">
+              <div>
+                <h3>Trip details</h3>
+                <div class="card-desc">When and where you shopped — the total is calculated from your items</div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="trip_date">Shopping Date *</label>
+                <input type="date" id="trip_date" name="trip_date" required>
+              </div>
+              <div class="field">
+                <label for="store_name">Store Name (optional)</label>
+                <input type="text" id="store_name" name="store_name" placeholder="e.g. Whole Foods" maxlength="255">
+              </div>
+              <div class="field">
+                <label for="total_cost">Total Cost</label>
+                <input type="text" id="total_cost" value="$0.00" readonly tabindex="-1" style="background:var(--color-surface-2);color:var(--color-text-secondary);">
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Food items (repeatable rows) ===== -->
+          <div class="card" id="add_items_section">
+            <div class="section-label">
+              <div>
+                <h3>Food Items</h3>
+                <div class="card-desc">One row per food item in this trip — purchase date defaults to the trip date</div>
+              </div>
+            </div>
+            <div class="item-rows" id="itemRows"></div>
+            <button type="button" class="add-item-btn" id="add_item_row_btn" onclick="addItemRow()">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              + Add Another Item
+            </button>
+          </div>
+
+          <!-- ===== Actions ===== -->
+          <div class="form-actions">
+            <a class="btn btn-secondary" href="dashboard.html">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="add_save">
+              <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+              Save Shopping Trip
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return; // guard redirected to login
+
+  var UNITS = ['kg', 'g', 'L', 'ml', 'pieces', 'pack'];
+  var rowsEl = document.getElementById('itemRows');
+  var tripDateEl = document.getElementById('trip_date');
+  var totalCostEl = document.getElementById('total_cost');
+  var errorEl = document.getElementById('formError');
+
+  // Default trip date = today
+  tripDateEl.value = new Date().toISOString().slice(0, 10);
+
+  function unitOptions() {
+    return UNITS.map(function (u) { return '<option value="' + u + '">' + u + '</option>'; }).join('');
+  }
+
+  window.addItemRow = function () {
+    var row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML =
+      '<div class="field"><label>Item Name *</label>' +
+        '<input type="text" class="it-name" placeholder="e.g. Milk, Tomatoes" required></div>' +
+      '<div class="field"><label>Category / Unit *</label>' +
+        '<select class="it-unit">' + unitOptions() + '</select></div>' +
+      '<div class="field"><label>Quantity *</label>' +
+        '<input type="number" class="it-qty" min="0.01" step="any" placeholder="1" required></div>' +
+      '<div class="field"><label>Price *</label>' +
+        '<input type="number" class="it-price" min="0" step="0.01" placeholder="0.00" required></div>' +
+      '<div class="field"><label>Purchase Date</label>' +
+        '<input type="date" class="it-date"></div>' +
+      '<button type="button" class="remove-item-btn" title="Remove item" aria-label="Remove item">' +
+        '<i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>';
+    row.querySelector('.it-date').value = tripDateEl.value;
+    row.querySelector('.remove-item-btn').addEventListener('click', function () {
+      if (rowsEl.children.length > 1) {
+        row.remove();
+      } else {
+        // Keep at least one row — just clear it
+        row.querySelector('.it-name').value = '';
+        row.querySelector('.it-qty').value = '';
+        row.querySelector('.it-price').value = '';
+      }
+      updateTotal();
+    });
+    row.querySelector('.it-price').addEventListener('input', updateTotal);
+    rowsEl.appendChild(row);
+  };
+
+  function updateTotal() {
+    var total = 0;
+    rowsEl.querySelectorAll('.it-price').forEach(function (inp) {
+      var v = parseFloat(inp.value);
+      if (isFinite(v) && v > 0) total += v;
+    });
+    totalCostEl.value = '$' + total.toFixed(2);
+  }
+
+  // Changing the trip date updates empty/previously-defaulted purchase dates
+  tripDateEl.addEventListener('change', function () {
+    rowsEl.querySelectorAll('.it-date').forEach(function (inp) {
+      if (!inp.value || inp.dataset.touched !== '1') inp.value = tripDateEl.value;
+    });
+  });
+  rowsEl.addEventListener('change', function (e) {
+    if (e.target.classList.contains('it-date')) e.target.dataset.touched = '1';
+  });
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ---- Save: POST v1/shopping-trips then redirect to food_log.html ----
+  document.getElementById('tripForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.classList.remove('show');
+
+    var tripDate = tripDateEl.value;
+    if (!tripDate) return showError('Shopping date is required.');
+
+    var items = [];
+    var rows = rowsEl.querySelectorAll('.item-row');
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var name = r.querySelector('.it-name').value.trim();
+      var qty = r.querySelector('.it-qty').value;
+      var price = r.querySelector('.it-price').value;
+      var unit = r.querySelector('.it-unit').value;
+      var pdate = r.querySelector('.it-date').value;
+
+      // Skip fully empty extra rows
+      if (!name && !qty && !price) continue;
+
+      if (!name) return showError('Item ' + (i + 1) + ': name is required.');
+      if (!(parseFloat(qty) > 0)) return showError('Item ' + (i + 1) + ': quantity must be a positive number.');
+      if (!(parseFloat(price) >= 0)) return showError('Item ' + (i + 1) + ': price must be a non-negative number.');
+
+      items.push({
+        name: name,
+        quantity: parseFloat(qty),
+        unit: unit,
+        price: parseFloat(price),
+        purchase_date: pdate || tripDate
+      });
+    }
+
+    if (items.length === 0) return showError('Add at least one food item to this trip.');
+
+    var saveBtn = document.getElementById('add_save');
+    saveBtn.disabled = true;
+
+    authFetch('v1/shopping-trips', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_date: tripDate,
+        store_name: document.getElementById('store_name').value.trim() || null,
+        items: items
+      })
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          saveBtn.disabled = false;
+          return showError(result.data.error || 'Failed to save the shopping trip.');
+        }
+        // add_save navigateTo: food_log
+        window.location.href = 'food_log.html';
+      })
+      .catch(function (err) {
+        saveBtn.disabled = false;
+        showError('Network error — please try again. (' + err.message + ')');
+      });
+  });
+
+  // Start with one item row
+  addItemRow();
+  updateTotal();
+})();
+</script>
+</body>
+</html>

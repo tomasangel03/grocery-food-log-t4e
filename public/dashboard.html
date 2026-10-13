@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — PantryLog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/global.css">
+<style>
+/* ===== Dashboard page-specific styles ===== */
+.dashboard-page .page-body{display:flex;flex-direction:column;gap:24px;}
+
+.dash-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.dash-heading h1{font:700 24px var(--font-head);letter-spacing:-0.02em;color:var(--color-text);}
+.dash-heading .page-desc{font:400 13.5px var(--font-body);color:var(--color-text-secondary);margin-top:4px;line-height:1.6;}
+.dash-heading-actions{display:flex;gap:12px;flex-shrink:0;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+.stat-card{cursor:default;}
+.stat-card:hover{box-shadow:var(--shadow-hover);}
+.stat-card .stat-label{margin-bottom:6px;}
+.stat-card .pill{margin-top:10px;}
+
+.row-2col{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:24px;align-items:stretch;}
+
+.recent-card table td.num,.recent-card table th.num{text-align:right;font-variant-numeric:tabular-nums;}
+.recent-card .item-name{display:flex;align-items:center;gap:10px;}
+.item-ico{width:30px;height:30px;border-radius:8px;background:#e6f3f1;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+
+.inventory-list{display:flex;flex-direction:column;}
+.inventory-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #eef2f5;}
+.inventory-row:last-child{border-bottom:0;padding-bottom:2px;}
+.inv-ico{width:34px;height:34px;border-radius:8px;background:var(--color-surface-2,#f8fafb);border:1px solid var(--color-border);color:var(--color-text-secondary);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.inventory-row .inv-name{font:500 13.5px var(--font-body);color:var(--color-text);line-height:1.4;}
+.inventory-row .inv-meta{font:400 12px var(--font-body);color:var(--color-text-secondary);line-height:1.4;}
+.inventory-row .inv-qty{margin-left:auto;text-align:right;}
+.inventory-row .inv-qty b{display:block;font:700 14px var(--font-head);color:var(--color-text);font-variant-numeric:tabular-nums;}
+.inventory-row .inv-qty span{font:400 11.5px var(--font-body);color:var(--color-text-muted);}
+.inv-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--color-border);display:flex;align-items:center;justify-content:space-between;font:500 12.5px var(--font-body);color:var(--color-text-secondary);}
+.inv-foot b{color:var(--color-text);font-weight:600;}
+
+.quick-add-card{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.quick-add-card .qa-text h3{font:600 15px var(--font-head);}
+.quick-add-card .qa-text p{font:400 12.5px var(--font-body);color:var(--color-text-secondary);margin-top:3px;}
+
+@media (max-width:1024px){
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .row-2col{grid-template-columns:1fr;}
+}
+@media (max-width:768px){
+  .stat-grid{grid-template-columns:1fr;}
+  .dash-heading-actions{width:100%;}
+  .dash-heading-actions .btn{flex:1;}
+}
+</style>
+</head>
+<body data-page="dashboard">
+<div class="dashboard-page">
+  <div class="app-shell" id="appShell">
+    <!-- sidebar + topbar injected by shell.js -->
+    <main class="page-main">
+      <div class="page-body">
+
+        <!-- ===== Page heading ===== -->
+        <section class="dash-heading">
+          <div>
+            <h1>Dashboard</h1>
+            <div class="page-desc">Your household grocery overview — recent purchases, current inventory and this month's spending.</div>
+          </div>
+          <div class="dash-heading-actions">
+            <a class="btn btn-secondary" id="dash_view_log" href="food_log.html">
+              <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+              View Food Log
+            </a>
+            <a class="btn btn-primary" id="dash_quick_add_btn" href="add_grocery.html">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              Add Grocery Shopping
+            </a>
+          </div>
+        </section>
+
+        <!-- ===== Quick stats ===== -->
+        <section class="stat-grid" id="dash_stats" aria-label="Quick statistics">
+          <div class="card stat-card">
+            <div class="stat-label">Total items logged</div>
+            <div class="stat-value" id="stat_total">—</div>
+            <span class="pill pill-success"><span class="dot"></span><span id="stat_total_sub">this month</span></span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Items in inventory</div>
+            <div class="stat-value" id="stat_inventory">—</div>
+            <span class="pill pill-neutral"><span class="dot"></span><span id="stat_inventory_sub">available now</span></span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Consumed this week</div>
+            <div class="stat-value" id="stat_consumed">—</div>
+            <span class="pill pill-success"><span class="dot"></span>last 7 days</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Spent this month</div>
+            <div class="stat-value" id="stat_spent">—</div>
+            <span class="pill pill-warning"><span class="dot"></span><span id="stat_spent_sub">0 trips</span></span>
+          </div>
+        </section>
+
+        <!-- ===== Recent groceries + inventory summary ===== -->
+        <section class="row-2col">
+
+          <!-- Recent groceries table -->
+          <div class="card table-card recent-card" id="dash_recent">
+            <div class="card-head">
+              <div>
+                <h3>Recently added groceries</h3>
+                <div class="card-desc">The last items logged by any household member</div>
+              </div>
+              <div class="head-actions">
+                <a class="btn btn-ghost btn-sm" href="food_log.html">View all</a>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col" class="num">Qty</th>
+                  <th scope="col">Purchased</th>
+                  <th scope="col">Store</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="recent_tbody">
+                <tr><td colspan="5" class="table-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Inventory summary -->
+          <div class="card" id="dash_inventory">
+            <div class="card-head">
+              <div>
+                <h3>Current inventory</h3>
+                <div class="card-desc">Available items grouped by unit — consumed items excluded</div>
+              </div>
+            </div>
+            <div class="inventory-list" id="inventory_list">
+              <div class="inventory-row"><div class="inv-meta">Loading…</div></div>
+            </div>
+            <div class="inv-foot">
+              <span>Total available items</span>
+              <b id="inv_total">—</b>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== Quick add ===== -->
+        <section class="card quick-add-card" id="dash_quick_add">
+          <div class="qa-text">
+            <h3>Just got back from the store?</h3>
+            <p>Log your shopping trip with all its items in under a minute.</p>
+          </div>
+          <a class="btn btn-primary" href="add_grocery.html">
+            <i class="fa-solid fa-cart-plus" aria-hidden="true"></i>
+            + Add Grocery Shopping
+          </a>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return; // guard redirected to login
+
+  var UNIT_GROUPS = [
+    { key: 'weight', label: 'By weight (kg / g)', icon: 'fa-weight-hanging', units: ['kg', 'g'] },
+    { key: 'volume', label: 'By volume (L / ml)', icon: 'fa-bottle-water', units: ['L', 'ml'] },
+    { key: 'count',  label: 'By count (pieces / pack)', icon: 'fa-boxes-stacked', units: ['pieces', 'pack'] }
+  ];
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function money(n) {
+    return '$' + Number(n || 0).toFixed(2);
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    var dt = new Date(d);
+    if (isNaN(dt)) return String(d).slice(0, 10);
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var that = new Date(dt); that.setHours(0, 0, 0, 0);
+    var diff = (today - that) / 86400000;
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function statusPill(status) {
+    if (status === 'consumed') {
+      return '<span class="pill pill-neutral"><span class="dot"></span>Consumed</span>';
+    }
+    return '<span class="pill pill-success"><span class="dot"></span>Available</span>';
+  }
+
+  // ---- Dashboard summary (dash_stats / dash_recent / dash_inventory) ----
+  authFetch('v1/dashboard/summary')
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      // Stats
+      var tm = data.this_month || {};
+      document.getElementById('stat_total').textContent = tm.total_items != null ? tm.total_items : 0;
+      document.getElementById('stat_spent').textContent = money(tm.total_spent);
+      document.getElementById('stat_spent_sub').textContent =
+        (tm.trip_count || 0) + ' trip' + (tm.trip_count === 1 ? '' : 's');
+
+      var inv = data.inventory_by_unit || [];
+      var invTotal = inv.reduce(function (s, r) { return s + Number(r.item_count || 0); }, 0);
+      document.getElementById('stat_inventory').textContent = invTotal;
+      document.getElementById('stat_inventory_sub').textContent =
+        'Across ' + inv.length + ' unit' + (inv.length === 1 ? '' : 's');
+      document.getElementById('inv_total').textContent = invTotal;
+
+      // Inventory summary grouped by unit family
+      var listEl = document.getElementById('inventory_list');
+      var rows = UNIT_GROUPS.map(function (g) {
+        var count = inv.filter(function (r) { return g.units.indexOf(r.unit) !== -1; })
+                       .reduce(function (s, r) { return s + Number(r.item_count || 0); }, 0);
+        var detail = inv.filter(function (r) { return g.units.indexOf(r.unit) !== -1; })
+                        .map(function (r) { return r.item_count + ' × ' + r.unit; }).join(', ');
+        return '<div class="inventory-row">' +
+          '<span class="inv-ico"><i class="fa-solid ' + g.icon + '" aria-hidden="true"></i></span>' +
+          '<div><div class="inv-name">' + g.label + '</div>' +
+          '<div class="inv-meta">' + (detail || 'Nothing in stock') + '</div></div>' +
+          '<div class="inv-qty"><b>' + count + '</b><span>items</span></div>' +
+        '</div>';
+      });
+      listEl.innerHTML = rows.join('');
+
+      // Recent groceries table
+      var tbody = document.getElementById('recent_tbody');
+      var items = data.recent_items || [];
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No groceries logged yet — add your first shopping trip.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = items.map(function (it) {
+        return '<tr>' +
+          '<td><div class="item-name"><span class="item-ico"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>' + esc(it.name) + '</div></td>' +
+          '<td class="num">' + esc(Number(it.quantity)) + ' ' + esc(it.unit) + '</td>' +
+          '<td>' + fmtDate(it.purchase_date) + '</td>' +
+          '<td>' + esc(it.store_name || '—') + '</td>' +
+          '<td>' + statusPill(it.status) + '</td>' +
+        '</tr>';
+      }).join('');
+    })
+    .catch(function (err) {
+      console.error('dashboard summary failed', err);
+      document.getElementById('recent_tbody').innerHTML =
+        '<tr><td colspan="5" class="table-empty">Could not load dashboard data.</td></tr>';
+    });
+
+  // ---- Consumed this week (computed from the food-items list) ----
+  authFetch('v1/food-items?status=consumed')
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      var weekAgo = Date.now() - 7 * 86400000;
+      var count = (data.items || []).filter(function (it) {
+        return it.consumed_at && new Date(it.consumed_at).getTime() >= weekAgo;
+      }).length;
+      document.getElementById('stat_consumed').textContent = count;
+    })
+    .catch(function () {
+      document.getElementById('stat_consumed').textContent = '0';
+    });
+})();
+</script>
+</body>
+</html>

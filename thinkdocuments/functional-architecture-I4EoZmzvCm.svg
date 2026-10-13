@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 680" width="1020" height="680">
+  <defs>
+    <linearGradient id="authGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#475569"/>
+      <stop offset="100%" style="stop-color:#334155"/>
+    </linearGradient>
+    <linearGradient id="dashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="shopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d97706"/>
+      <stop offset="100%" style="stop-color:#b45309"/>
+    </linearGradient>
+    <linearGradient id="foodGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#047857"/>
+    </linearGradient>
+    <linearGradient id="actGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d9488"/>
+      <stop offset="100%" style="stop-color:#0f766e"/>
+    </linearGradient>
+    <linearGradient id="admGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626"/>
+      <stop offset="100%" style="stop-color:#b91c1c"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-opacity="0.10"/>
+    </filter>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#e5e7eb" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <linearGradient id="waveIconGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="spectrumGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#475569"/>
+      <stop offset="20%" style="stop-color:#2563eb"/>
+      <stop offset="40%" style="stop-color:#d97706"/>
+      <stop offset="60%" style="stop-color:#059669"/>
+      <stop offset="80%" style="stop-color:#0d9488"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1020" height="680" fill="#f8fafc"/>
+  <rect width="1020" height="680" fill="url(#grid)"/>
+
+  <g fill="url(#waveIconGrad)">
+    <rect x="46" y="30" width="5" height="20" rx="2"/>
+    <rect x="56" y="20" width="5" height="40" rx="2"/>
+    <rect x="66" y="34" width="5" height="12" rx="2"/>
+    <rect x="76" y="14" width="5" height="52" rx="2"/>
+    <rect x="86" y="26" width="5" height="28" rx="2"/>
+    <rect x="96" y="36" width="5" height="8" rx="2"/>
+    <rect x="924" y="36" width="5" height="8" rx="2"/>
+    <rect x="934" y="26" width="5" height="28" rx="2"/>
+    <rect x="944" y="14" width="5" height="52" rx="2"/>
+    <rect x="954" y="34" width="5" height="12" rx="2"/>
+    <rect x="964" y="20" width="5" height="40" rx="2"/>
+    <rect x="974" y="30" width="5" height="20" rx="2"/>
+  </g>
+  <text x="510" y="40" font-family="Georgia, serif" font-size="28" fill="#1a1a2e" text-anchor="middle" font-weight="bold">Household Grocery Food Log</text>
+  <text x="510" y="60" font-family="Georgia, serif" font-size="13" fill="#64748b" text-anchor="middle" letter-spacing="0.5">Functional Architecture · Grocery Tracking, Consumption &amp; Audit</text>
+  <rect x="310" y="72" width="400" height="3" rx="1.5" fill="url(#spectrumGrad)"/>
+
+  <!-- ROW 1 -->
+  <text x="55" y="118" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Authentication</text>
+  <rect x="50" y="126" width="200" height="3" rx="1" fill="url(#authGrad)"/>
+
+  <g transform="translate(50, 140)" filter="url(#shadow)">
+    <rect width="200" height="97" rx="10" fill="#ffffff" stroke="#475569" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#475569"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="8" height="6" rx="1.2" fill="none"/><path d="M5,6 V4.5 a2,2 0 0 1 4,0 V6" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">Login Page</text>
+    <circle cx="15" cy="45" r="2" fill="#475569"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Username [TextField]</text>
+    <circle cx="15" cy="58" r="2" fill="#475569"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Password [TextField]</text>
+    <circle cx="15" cy="71" r="2" fill="#475569"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Login [Button]</text>
+    <circle cx="15" cy="84" r="2" fill="#475569"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">Error Message [Label]</text>
+  </g>
+
+  <text x="275" y="118" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Dashboard</text>
+  <rect x="270" y="126" width="200" height="3" rx="1" fill="url(#dashGrad)"/>
+
+  <g transform="translate(270, 140)" filter="url(#shadow)">
+    <rect width="200" height="136" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#2563eb"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="2.6" height="5.5" rx="0.8" fill="none"/><rect x="6" y="4" width="2.6" height="8.5" rx="0.8" fill="none"/><rect x="9.5" y="1.8" width="2.6" height="10.7" rx="0.8" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">Dashboard</text>
+    <circle cx="15" cy="45" r="2" fill="#2563eb"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Main Navigation [LeftMenu]</text>
+    <circle cx="15" cy="58" r="2" fill="#2563eb"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Quick Stats [StatsPanel]</text>
+    <circle cx="15" cy="71" r="2" fill="#2563eb"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Recently Added Groceries [List]</text>
+    <circle cx="15" cy="84" r="2" fill="#2563eb"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">Current Inventory Summary [Card]</text>
+    <circle cx="15" cy="97" r="2" fill="#2563eb"/>
+    <text x="23" y="100" font-family="monospace" font-size="8.3" fill="#334155">+ Add Grocery Shopping [Button]</text>
+    <circle cx="15" cy="110" r="2" fill="#2563eb"/>
+    <text x="23" y="113" font-family="monospace" font-size="8.3" fill="#334155">View Food Log [Button]</text>
+    <circle cx="15" cy="123" r="2" fill="#2563eb"/>
+    <text x="23" y="126" font-family="monospace" font-size="8.3" fill="#334155">Logout [RightMenuBtn]</text>
+  </g>
+
+  <text x="495" y="118" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Grocery Shopping</text>
+  <rect x="490" y="126" width="200" height="3" rx="1" fill="url(#shopGrad)"/>
+
+  <g transform="translate(490, 140)" filter="url(#shadow)">
+    <rect width="200" height="188" rx="10" fill="#ffffff" stroke="#d97706" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#d97706"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7,11 V3" fill="none"/><path d="M4,6 L7,3 L10,6" fill="none"/><path d="M2.5,12.3 H11.5" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">Add Grocery Shopping</text>
+    <circle cx="15" cy="45" r="2" fill="#d97706"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Back to Dashboard [LeftMenuBtn]</text>
+    <circle cx="15" cy="58" r="2" fill="#d97706"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Shopping Date [DatePicker]</text>
+    <circle cx="15" cy="71" r="2" fill="#d97706"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Store Name (opt.) [TextField]</text>
+    <circle cx="15" cy="84" r="2" fill="#d97706"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">Food Items [Section]</text>
+    <circle cx="15" cy="97" r="2" fill="#d97706"/>
+    <text x="23" y="100" font-family="monospace" font-size="8.3" fill="#334155">Item Name [TextField]</text>
+    <circle cx="15" cy="110" r="2" fill="#d97706"/>
+    <text x="23" y="113" font-family="monospace" font-size="8.3" fill="#334155">Quantity [TextField]</text>
+    <circle cx="15" cy="123" r="2" fill="#d97706"/>
+    <text x="23" y="126" font-family="monospace" font-size="8.3" fill="#334155">Unit [Dropdown]</text>
+    <circle cx="15" cy="136" r="2" fill="#d97706"/>
+    <text x="23" y="139" font-family="monospace" font-size="8.3" fill="#334155">Price [TextField]</text>
+    <circle cx="15" cy="149" r="2" fill="#d97706"/>
+    <text x="23" y="152" font-family="monospace" font-size="8.3" fill="#334155">Purchase Date [DatePicker]</text>
+    <circle cx="15" cy="162" r="2" fill="#d97706"/>
+    <text x="23" y="165" font-family="monospace" font-size="8.3" fill="#334155">+ Add Another Item [Button]</text>
+    <circle cx="15" cy="175" r="2" fill="#d97706"/>
+    <text x="23" y="178" font-family="monospace" font-size="8.3" fill="#334155">Save Shopping Trip [Button]</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(710, 140)" filter="url(#shadow)">
+    <rect width="280" height="225" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="140" y="24" font-family="Georgia, serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="bold">Module Legend</text>
+    <line x1="15" y1="36" x2="265" y2="36" stroke="#e2e8f0" stroke-width="1"/>
+    <rect x="15" y="48" width="6" height="14" rx="3" fill="url(#authGrad)"/>
+    <text x="42" y="58" font-family="Georgia, serif" font-size="10" fill="#475569">Authentication</text>
+    <rect x="15" y="68" width="6" height="14" rx="3" fill="url(#dashGrad)"/>
+    <text x="42" y="78" font-family="Georgia, serif" font-size="10" fill="#475569">Dashboard</text>
+    <rect x="15" y="88" width="6" height="14" rx="3" fill="url(#shopGrad)"/>
+    <text x="42" y="98" font-family="Georgia, serif" font-size="10" fill="#475569">Grocery Shopping</text>
+    <rect x="15" y="108" width="6" height="14" rx="3" fill="url(#foodGrad)"/>
+    <text x="42" y="118" font-family="Georgia, serif" font-size="10" fill="#475569">Food Tracking</text>
+    <rect x="15" y="128" width="6" height="14" rx="3" fill="url(#actGrad)"/>
+    <text x="42" y="138" font-family="Georgia, serif" font-size="10" fill="#475569">Activity Audit</text>
+    <rect x="15" y="148" width="6" height="14" rx="3" fill="url(#admGrad)"/>
+    <text x="42" y="158" font-family="Georgia, serif" font-size="10" fill="#475569">Administration</text>
+    <line x1="15" y1="172" x2="265" y2="172" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="140" y="192" font-family="Georgia, serif" font-size="9" fill="#64748b" text-anchor="middle">6 Screens · Grocery &amp; Food Tracking</text>
+    <text x="140" y="208" font-family="Georgia, serif" font-size="9" fill="#64748b" text-anchor="middle">Household Members · Admin Roles</text>
+  </g>
+
+  <!-- ROW 2 -->
+  <text x="55" y="358" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Food Tracking</text>
+  <rect x="50" y="366" width="200" height="3" rx="1" fill="url(#foodGrad)"/>
+
+  <g transform="translate(50, 380)" filter="url(#shadow)">
+    <rect width="200" height="149" rx="10" fill="#ffffff" stroke="#059669" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#059669"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3,4 H11 M3,7 H11 M3,10 H11" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">Food Log List</text>
+    <circle cx="15" cy="45" r="2" fill="#059669"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Dashboard [LeftMenuBtn]</text>
+    <circle cx="15" cy="58" r="2" fill="#059669"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Search [TextField]</text>
+    <circle cx="15" cy="71" r="2" fill="#059669"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Status Filter [Dropdown]</text>
+    <circle cx="15" cy="84" r="2" fill="#059669"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">Date Range [DatePicker]</text>
+    <circle cx="15" cy="97" r="2" fill="#059669"/>
+    <text x="23" y="100" font-family="monospace" font-size="8.3" fill="#334155">Member Filter [Dropdown]</text>
+    <circle cx="15" cy="110" r="2" fill="#059669"/>
+    <text x="23" y="113" font-family="monospace" font-size="8.3" fill="#334155">Food Items [Table]</text>
+    <circle cx="15" cy="123" r="2" fill="#059669"/>
+    <text x="23" y="126" font-family="monospace" font-size="8.3" fill="#334155">Mark as Consumed [Button]</text>
+    <circle cx="15" cy="136" r="2" fill="#059669"/>
+    <text x="23" y="139" font-family="monospace" font-size="8.3" fill="#334155">Edit Item [Button]</text>
+  </g>
+
+  <text x="275" y="358" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Activity Audit</text>
+  <rect x="270" y="366" width="200" height="3" rx="1" fill="url(#actGrad)"/>
+
+  <g transform="translate(270, 380)" filter="url(#shadow)">
+    <rect width="200" height="97" rx="10" fill="#ffffff" stroke="#0d9488" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#0d9488"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7,2 a3.6,3.6 0 0 1 3.6,3.6 V9 l1.2,1.8 H2.2 L3.4,9 V5.6 A3.6,3.6 0 0 1 7,2 Z" fill="none"/><path d="M5.6,11.4 a1.5,1.5 0 0 0 2.8,0" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">Activity Log</text>
+    <circle cx="15" cy="45" r="2" fill="#0d9488"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Dashboard [LeftMenuBtn]</text>
+    <circle cx="15" cy="58" r="2" fill="#0d9488"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Filter by User [Dropdown]</text>
+    <circle cx="15" cy="71" r="2" fill="#0d9488"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Filter by Action Type [Dropdown]</text>
+    <circle cx="15" cy="84" r="2" fill="#0d9488"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">Activity Entries [List]</text>
+  </g>
+
+  <text x="495" y="358" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Administration</text>
+  <rect x="490" y="366" width="200" height="3" rx="1" fill="url(#admGrad)"/>
+
+  <g transform="translate(490, 380)" filter="url(#shadow)">
+    <rect width="200" height="123" rx="10" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/>
+    <path d="M0,10 A10,10 0 0 1 10,0 H190 A10,10 0 0 1 200,10 V34 H0 Z" fill="#dc2626"/>
+    <g transform="translate(12, 10)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7,1.4 L12,3.2 V7 C12,10 9.5,12 7,13 C4.5,12 2,10 2,7 V3.2 Z" fill="none"/></g>
+    <text x="33" y="22" font-family="Georgia, serif" font-size="11.5" fill="#ffffff" font-weight="bold">User Management</text>
+    <circle cx="15" cy="45" r="2" fill="#dc2626"/>
+    <text x="23" y="48" font-family="monospace" font-size="8.3" fill="#334155">Dashboard [LeftMenuBtn]</text>
+    <circle cx="15" cy="58" r="2" fill="#dc2626"/>
+    <text x="23" y="61" font-family="monospace" font-size="8.3" fill="#334155">Household Members [Table]</text>
+    <circle cx="15" cy="71" r="2" fill="#dc2626"/>
+    <text x="23" y="74" font-family="monospace" font-size="8.3" fill="#334155">Add Member [Button]</text>
+    <circle cx="15" cy="84" r="2" fill="#dc2626"/>
+    <text x="23" y="87" font-family="monospace" font-size="8.3" fill="#334155">New Member [Modal]</text>
+    <circle cx="15" cy="97" r="2" fill="#dc2626"/>
+    <text x="23" y="100" font-family="monospace" font-size="8.3" fill="#334155">Role [Dropdown]</text>
+    <circle cx="15" cy="110" r="2" fill="#dc2626"/>
+    <text x="23" y="113" font-family="monospace" font-size="8.3" fill="#334155">Deactivate Member [Button]</text>
+  </g>
+
+  <!-- Connectors -->
+  <path d="M 250 188 Q 260 198 270 208" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+  <path d="M 470 208 Q 480 221 490 234" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+  <path d="M 370 276 Q 260 328 150 380" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+  <path d="M 250 454 Q 260 441 270 428" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+  <path d="M 470 428 Q 480 434 490 441" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+
+  <!-- ROW 3: Member Journey -->
+  <text x="55" y="549" font-family="Georgia, serif" font-size="16" fill="#1e293b" font-weight="bold">Member Journey</text>
+  <rect x="50" y="557" width="840" height="3" rx="1" fill="url(#dashGrad)"/>
+
+  <g transform="translate(50, 576)">
+    <rect width="140" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="15" cy="15" r="10" fill="#2563eb"/>
+    <text x="15" y="19" font-family="Georgia, serif" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">1</text>
+    <g transform="translate(112, 6) scale(0.95)" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="8" height="6" rx="1.2" fill="none"/><path d="M5,6 V4.5 a2,2 0 0 1 4,0 V6" fill="none"/></g>
+    <text x="70" y="40" font-family="Georgia, serif" font-size="9" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Sign In</text>
+    <text x="70" y="58" font-family="monospace" font-size="7" fill="#2563eb" text-anchor="middle">Household auth</text>
+  </g>
+  <path d="M 190 611 L 225 611" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(225, 576)">
+    <rect width="140" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="15" cy="15" r="10" fill="#2563eb"/>
+    <text x="15" y="19" font-family="Georgia, serif" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">2</text>
+    <g transform="translate(112, 6) scale(0.95)" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="2.6" height="5.5" rx="0.8" fill="none"/><rect x="6" y="4" width="2.6" height="8.5" rx="0.8" fill="none"/><rect x="9.5" y="1.8" width="2.6" height="10.7" rx="0.8" fill="none"/></g>
+    <text x="70" y="40" font-family="Georgia, serif" font-size="9" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Dashboard</text>
+    <text x="70" y="58" font-family="monospace" font-size="7" fill="#2563eb" text-anchor="middle">Stats &amp; quick add</text>
+  </g>
+  <path d="M 365 611 L 400 611" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(400, 576)">
+    <rect width="140" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="15" cy="15" r="10" fill="#2563eb"/>
+    <text x="15" y="19" font-family="Georgia, serif" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">3</text>
+    <g transform="translate(112, 6) scale(0.95)" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7,11 V3" fill="none"/><path d="M4,6 L7,3 L10,6" fill="none"/><path d="M2.5,12.3 H11.5" fill="none"/></g>
+    <text x="70" y="40" font-family="Georgia, serif" font-size="9" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Log Shopping</text>
+    <text x="70" y="58" font-family="monospace" font-size="7" fill="#2563eb" text-anchor="middle">Multi-item entry</text>
+  </g>
+  <path d="M 540 611 L 575 611" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(575, 576)">
+    <rect width="140" height="70" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="15" cy="15" r="10" fill="#2563eb"/>
+    <text x="15" y="19" font-family="Georgia, serif" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">4</text>
+    <g transform="translate(112, 6) scale(0.95)" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3,4 H11 M3,7 H11 M3,10 H11" fill="none"/></g>
+    <text x="70" y="40" font-family="Georgia, serif" font-size="9" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Track &amp; Consume</text>
+    <text x="70" y="58" font-family="monospace" font-size="7" fill="#2563eb" text-anchor="middle">Search &amp; filter</text>
+  </g>
+  <path d="M 715 611 L 750 611" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(750, 576)">
+    <rect width="140" height="70" rx="4" fill="#1e3a8a" stroke="#1e40af" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="15" cy="15" r="10" fill="#fff"/>
+    <text x="15" y="19" font-family="Georgia, serif" font-size="10" fill="#1e3a8a" text-anchor="middle" font-weight="bold">5</text>
+    <g transform="translate(112, 6) scale(0.95)" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7,2 a3.6,3.6 0 0 1 3.6,3.6 V9 l1.2,1.8 H2.2 L3.4,9 V5.6 A3.6,3.6 0 0 1 7,2 Z" fill="none"/><path d="M5.6,11.4 a1.5,1.5 0 0 0 2.8,0" fill="none"/></g>
+    <text x="70" y="40" font-family="Georgia, serif" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Audit Trail</text>
+    <text x="70" y="58" font-family="monospace" font-size="7" fill="#bfdbfe" text-anchor="middle">All actions logged</text>
+  </g>
+</svg>

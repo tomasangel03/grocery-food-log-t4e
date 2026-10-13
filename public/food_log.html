@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food Log — PantryLog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/global.css">
+<style>
+/* ===== Food Log page-specific styles ===== */
+.food-log-page .page-body{display:flex;flex-direction:column;gap:24px}
+
+/* ---------- Page header ---------- */
+.fl-page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.fl-page-head h1{font:700 24px var(--font-head);letter-spacing:-0.02em;color:var(--color-text)}
+.fl-page-head .page-desc{font:400 13.5px var(--font-body);color:var(--color-text-secondary);margin-top:4px;max-width:560px}
+
+/* ---------- Mini stat strip ---------- */
+.fl-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.fl-stat-grid .stat-card{cursor:default}
+.fl-stat-grid .stat-card:hover{box-shadow:var(--shadow-hover)}
+.fl-stat-grid .stat-label{margin-bottom:6px}
+.fl-stat-grid .pill{margin-top:10px}
+
+/* ---------- Filter bar ---------- */
+.filter-bar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:20px 24px}
+.filter-bar .field{display:flex;flex-direction:column;margin:0}
+.filter-bar label{font:500 12px var(--font-body);color:var(--color-text-secondary);margin-bottom:6px}
+.search-wrap{position:relative;width:260px}
+.search-wrap .fa-magnifying-glass{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--color-text-muted);font-size:13px;pointer-events:none}
+.search-wrap input{padding-left:36px;width:100%}
+.filter-bar select{min-width:150px}
+.date-range{display:flex;align-items:center;gap:8px}
+.date-range input[type="date"]{width:150px}
+.date-range .sep{font:400 12px var(--font-body);color:var(--color-text-muted)}
+.filter-actions{display:flex;gap:8px;margin-left:auto}
+
+/* ---------- Table card ---------- */
+.fl-table-card{padding:0;overflow:hidden}
+.fl-table-card .card-head{padding:20px 24px 16px;margin-bottom:0}
+.fl-table-card table{width:100%;border-collapse:collapse}
+.fl-table-card th{text-align:left;font:600 11.5px var(--font-body);letter-spacing:.05em;text-transform:uppercase;color:var(--color-text-muted);padding:9px 14px;border-bottom:1px solid var(--color-border)}
+.fl-table-card td{padding:11px 14px;border-bottom:1px solid #eef2f5;font:400 13px var(--font-body);color:var(--color-text);vertical-align:middle}
+.fl-table-card tbody tr:last-child td{border-bottom:0}
+.fl-table-card td.num,.fl-table-card th.num{text-align:right;font-variant-numeric:tabular-nums}
+.fl-table-card td.item-name{font:500 13.5px var(--font-body);color:var(--color-text)}
+.item-cell{display:flex;align-items:center;gap:10px}
+.item-icon{width:32px;height:32px;border-radius:8px;background:#e6f3f1;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.member-cell{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.member-cell .avatar{width:24px;height:24px;font-size:9.5px}
+.actions-cell{white-space:nowrap;text-align:right}
+.actions-cell .btn+.btn{margin-left:6px}
+tr.row-consumed td{color:var(--color-text-muted)}
+tr.row-consumed td.item-name{color:var(--color-text-secondary)}
+tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
+
+/* Table footer */
+.fl-table-foot{display:flex;align-items:center;gap:8px;padding:14px 24px;background:var(--color-surface-2,#f8fafb);border-top:1px solid var(--color-border);font:500 12.5px var(--font-body);color:var(--color-text-secondary)}
+.fl-table-foot b{color:var(--color-text);font-weight:600}
+.fl-table-foot .foot-hint{margin-left:auto;font:400 12px var(--font-body);color:var(--color-text-muted)}
+
+/* Empty state */
+.fl-empty{display:none;flex-direction:column;align-items:center;text-align:center;padding:56px 24px}
+.fl-empty.visible{display:flex}
+.fl-empty .empty-icon{width:48px;height:48px;border-radius:12px;background:#e6f3f1;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:16px}
+.fl-empty h4{font:700 15px var(--font-head);color:var(--color-text);margin-bottom:6px}
+.fl-empty p{font:400 13px var(--font-body);color:var(--color-text-secondary);max-width:340px;margin-bottom:18px}
+
+/* ---------- Modals (consume + edit) ---------- */
+.fl-modal-backdrop{position:fixed;inset:0;background:rgba(16,24,40,0.4);display:none;align-items:center;justify-content:center;z-index:100;padding:24px}
+.fl-modal-backdrop.open{display:flex}
+.fl-modal{background:var(--color-surface);border-radius:12px;box-shadow:0 20px 24px rgba(16,24,40,0.10),0 8px 8px rgba(16,24,40,0.04);width:100%;max-width:420px;padding:24px;animation:flModalIn 180ms ease}
+@keyframes flModalIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:scale(1)}}
+.fl-modal .modal-icon{width:40px;height:40px;border-radius:999px;background:#e6f3f1;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+.fl-modal h3{font:700 16px var(--font-head);color:var(--color-text);margin-bottom:6px}
+.fl-modal p{font:400 13.5px var(--font-body);color:var(--color-text-secondary);line-height:1.6;margin-bottom:20px}
+.fl-modal p b{color:var(--color-text);font-weight:600}
+.fl-modal .modal-actions{display:flex;justify-content:flex-end;gap:10px}
+.fl-modal .field{margin-bottom:14px}
+
+/* ---------- Toast ---------- */
+.fl-toast{position:fixed;bottom:24px;right:24px;z-index:110;display:flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-success);border-radius:10px;box-shadow:0 4px 8px rgba(16,24,40,0.06),0 2px 4px rgba(16,24,40,0.04);padding:12px 16px;font:500 13px var(--font-body);color:var(--color-text);opacity:0;transform:translateY(8px);pointer-events:none;transition:all 150ms ease}
+.fl-toast.show{opacity:1;transform:translateY(0)}
+.fl-toast i{color:var(--color-success)}
+.fl-toast.error{border-left-color:var(--color-danger)}
+.fl-toast.error i{color:var(--color-danger)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1024px){
+  .fl-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .filter-actions{margin-left:0}
+}
+@media (max-width:768px){
+  .fl-stat-grid{grid-template-columns:1fr}
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .search-wrap,.date-range input[type="date"],.filter-bar select{width:100%;min-width:0}
+  .date-range{flex-wrap:wrap}
+  .fl-table-card{overflow-x:auto}
+}
+</style>
+</head>
+<body data-page="food_log">
+<div class="food-log-page">
+  <div class="app-shell" id="appShell">
+    <!-- sidebar + topbar injected by shell.js -->
+    <main class="page-main">
+      <div class="page-body">
+
+        <!-- ===== Page header ===== -->
+        <div class="fl-page-head">
+          <div>
+            <h1>Food Log</h1>
+            <div class="page-desc">Every food item your household has logged. Search, filter and mark items as consumed when you use them up.</div>
+          </div>
+          <a class="btn btn-primary" href="add_grocery.html">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Log shopping trip
+          </a>
+        </div>
+
+        <!-- ===== Mini stats ===== -->
+        <section class="fl-stat-grid" aria-label="Food log summary">
+          <div class="card stat-card">
+            <div class="stat-label">Total items logged</div>
+            <div class="stat-value" id="fl_stat_total">—</div>
+            <span class="pill pill-neutral"><span class="dot"></span>All time</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Available in pantry</div>
+            <div class="stat-value" id="fl_stat_available">—</div>
+            <span class="pill pill-success"><span class="dot"></span>Ready to use</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Consumed</div>
+            <div class="stat-value" id="fl_stat_consumed">—</div>
+            <span class="pill pill-warning"><span class="dot"></span>Logged as used</span>
+          </div>
+        </section>
+
+        <!-- ===== Filter bar ===== -->
+        <section class="card filter-bar" aria-label="Filter food items">
+          <div class="field">
+            <label for="log_search">Search</label>
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              <input type="text" id="log_search" placeholder="Search by item name…" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="log_filter_status">Status</label>
+            <select id="log_filter_status">
+              <option value="available" selected>Available</option>
+              <option value="consumed">Consumed</option>
+              <option value="all">All items</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="log_date_from">Purchase date</label>
+            <div class="date-range" id="log_filter_dates">
+              <input type="date" id="log_date_from" aria-label="Purchased from date">
+              <span class="sep">to</span>
+              <input type="date" id="log_date_to" aria-label="Purchased to date">
+            </div>
+          </div>
+          <div class="field" id="fl_member_field">
+            <label for="log_filter_member">Added by</label>
+            <select id="log_filter_member">
+              <option value="all" selected>All members</option>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-secondary" id="fl_apply_btn">
+              <i class="fa-solid fa-filter" aria-hidden="true"></i>
+              Filter
+            </button>
+            <button class="btn btn-ghost" onclick="flResetFilters()">Reset</button>
+          </div>
+        </section>
+
+        <!-- ===== Table card ===== -->
+        <section class="card fl-table-card" id="log_table">
+          <div class="card-head">
+            <div>
+              <h3>Food items</h3>
+              <div class="card-desc">Consumed items are hidden by default — switch the status filter to see them.</div>
+            </div>
+          </div>
+          <table id="fl_table">
+            <thead>
+              <tr>
+                <th scope="col">Item Name</th>
+                <th scope="col" class="num">Quantity</th>
+                <th scope="col">Unit</th>
+                <th scope="col" class="num">Price</th>
+                <th scope="col">Purchase Date</th>
+                <th scope="col">Added By</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="actions-cell">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="log_table_body">
+              <tr><td colspan="8" class="table-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Empty state -->
+          <div class="fl-empty" id="fl_empty">
+            <div class="empty-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></div>
+            <h4>No items match your filters</h4>
+            <p>Try widening the date range, clearing the search, or switching the status filter to &ldquo;All items&rdquo;.</p>
+            <button class="btn btn-secondary btn-sm" onclick="flResetFilters()">
+              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+              Reset filters
+            </button>
+          </div>
+
+          <div class="fl-table-foot" id="fl_table_foot">
+            Showing <b id="fl_count">0</b>&nbsp;of&nbsp;<b id="fl_total_count">0</b>&nbsp;logged items
+            <span class="foot-hint">Tip: marking an item as consumed records who consumed it and when.</span>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Consume confirmation modal ===== -->
+<div class="fl-modal-backdrop" id="fl_consume_modal" role="dialog" aria-modal="true" aria-labelledby="fl_modal_title">
+  <div class="fl-modal">
+    <div class="modal-icon"><i class="fa-solid fa-utensils" aria-hidden="true"></i></div>
+    <h3 id="fl_modal_title">Mark as consumed?</h3>
+    <p>You are about to mark <b><span id="fl_modal_item"></span></b> as consumed. This records you as the consumer with today's date and removes it from the available inventory. This action cannot be repeated.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="flCloseConsumeModal()">Cancel</button>
+      <button class="btn btn-primary" id="fl_modal_confirm" onclick="flConfirmConsume()">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        Mark as consumed
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Admin edit modal ===== -->
+<div class="fl-modal-backdrop" id="fl_edit_modal" role="dialog" aria-modal="true" aria-labelledby="fl_edit_title">
+  <div class="fl-modal">
+    <div class="modal-icon"><i class="fa-solid fa-pen" aria-hidden="true"></i></div>
+    <h3 id="fl_edit_title">Edit item</h3>
+    <p>Admin only — update the item's name, quantity or price. The change is recorded in the activity log.</p>
+    <div class="field">
+      <label for="fl_edit_name">Item name</label>
+      <input type="text" id="fl_edit_name" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fl_edit_qty">Quantity</label>
+      <input type="number" id="fl_edit_qty" min="0" step="any">
+    </div>
+    <div class="field">
+      <label for="fl_edit_price">Price</label>
+      <input type="number" id="fl_edit_price" min="0" step="0.01">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="fl_edit_remove" onclick="flRemoveItem()" style="margin-right:auto;color:var(--color-danger,#d92d20)">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+        Remove item
+      </button>
+      <button class="btn btn-secondary" onclick="flCloseEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="fl_edit_save" onclick="flSaveEdit()">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        Save changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="fl-toast" id="fl_toast" role="status" aria-live="polite">
+  <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+  <span id="fl_toast_msg"></span>
+</div>
+
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return; // guard redirected to login
+
+  var isAdmin = Shell.user.role === 'admin';
+  var allItems = [];      // last fetched set (status=all + server-side filters)
+  var flDefaultStatus = 'available'; // becomes 'all' when FEATURE_SHOW_CONSUMED_DEFAULT is on
+  var flAppliedDefault = false;
+  var pendingConsumeId = null;
+  var pendingEditId = null;
+  var toastTimer = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function money(n) { return '$' + Number(n || 0).toFixed(2); }
+  function fmtDate(d) {
+    if (!d) return '—';
+    var dt = new Date(d);
+    if (isNaN(dt)) return String(d).slice(0, 10);
+    return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function initialsOf(name) {
+    var parts = String(name || '?').trim().split(/[\s._-]+/);
+    return ((parts[0] ? parts[0][0] : '') + (parts[1] ? parts[1][0] : '')).toUpperCase() || '?';
+  }
+  function toast(msg, isError) {
+    var el = document.getElementById('fl_toast');
+    document.getElementById('fl_toast_msg').textContent = msg;
+    el.classList.toggle('error', !!isError);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+  }
+  function statusPill(status) {
+    return status === 'consumed'
+      ? '<span class="pill pill-neutral"><span class="dot"></span>Consumed</span>'
+      : '<span class="pill pill-success"><span class="dot"></span>Available</span>';
+  }
+
+  // ---- Member filter: populated from /v1/users for admins only ----
+  if (isAdmin) {
+    authFetch('v1/users')
+      .then(function (res) { return res.ok ? res.json() : { users: [] }; })
+      .then(function (data) {
+        var sel = document.getElementById('log_filter_member');
+        (data.users || []).forEach(function (u) {
+          var opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+          sel.appendChild(opt);
+        });
+      })
+      .catch(function () { /* leave "All members" only */ });
+  } else {
+    document.getElementById('fl_member_field').style.display = 'none';
+  }
+
+  // ---- Load items from GET /v1/food-items ----
+  function loadItems() {
+    var params = ['status=all'];
+    var q = document.getElementById('log_search').value.trim();
+    var from = document.getElementById('log_date_from').value;
+    var to = document.getElementById('log_date_to').value;
+    var member = document.getElementById('log_filter_member').value;
+    if (q) params.push('q=' + encodeURIComponent(q));
+    if (from) params.push('from=' + encodeURIComponent(from));
+    if (to) params.push('to=' + encodeURIComponent(to));
+    if (member && member !== 'all') params.push('userId=' + encodeURIComponent(member));
+
+    return authFetch('v1/food-items?' + params.join('&'))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        allItems = data.items || [];
+        // FEATURE_SHOW_CONSUMED_DEFAULT: when the server flag is on, the
+        // status filter defaults to "All items" (applied once, on first load).
+        if (!flAppliedDefault) {
+          flAppliedDefault = true;
+          if (data.show_consumed_default) {
+            flDefaultStatus = 'all';
+            document.getElementById('log_filter_status').value = 'all';
+          }
+        }
+        render();
+      })
+      .catch(function (err) {
+        console.error('load food items failed', err);
+        document.getElementById('log_table_body').innerHTML =
+          '<tr><td colspan="8" class="table-empty">Could not load food items.</td></tr>';
+      });
+  }
+
+  // ---- Render (status filter applied client-side so the stats stay accurate) ----
+  function render() {
+    var status = document.getElementById('log_filter_status').value;
+
+    var available = allItems.filter(function (it) { return it.status === 'available'; }).length;
+    var consumed = allItems.filter(function (it) { return it.status === 'consumed'; }).length;
+    document.getElementById('fl_stat_total').textContent = allItems.length;
+    document.getElementById('fl_stat_available').textContent = available;
+    document.getElementById('fl_stat_consumed').textContent = consumed;
+
+    var rows = allItems.filter(function (it) {
+      return status === 'all' || it.status === status;
+    });
+
+    document.getElementById('fl_count').textContent = rows.length;
+    document.getElementById('fl_total_count').textContent = allItems.length;
+
+    var tbody = document.getElementById('log_table_body');
+    var empty = document.getElementById('fl_empty');
+    var table = document.getElementById('fl_table');
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '';
+      table.style.display = 'none';
+      empty.classList.add('visible');
+      return;
+    }
+    table.style.display = '';
+    empty.classList.remove('visible');
+
+    tbody.innerHTML = rows.map(function (it) {
+      var addedBy = it.added_by_username || '—';
+      var consumeBtn = it.status === 'available'
+        ? '<button class="btn btn-secondary btn-sm" onclick="flAskConsume(\'' + esc(it.id) + '\')">' +
+            '<i class="fa-solid fa-utensils" aria-hidden="true"></i> Consume</button>'
+        : '';
+      var editBtn = isAdmin
+        ? '<button class="btn btn-ghost btn-sm" onclick="flOpenEditModal(\'' + esc(it.id) + '\')">' +
+            '<i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>'
+        : '';
+      return '<tr class="' + (it.status === 'consumed' ? 'row-consumed' : '') + '">' +
+        '<td class="item-name"><div class="item-cell">' +
+          '<span class="item-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>' +
+          esc(it.name) + '</div></td>' +
+        '<td class="num">' + esc(Number(it.quantity)) + '</td>' +
+        '<td>' + esc(it.unit) + '</td>' +
+        '<td class="num">' + money(it.price) + '</td>' +
+        '<td>' + fmtDate(it.purchase_date) + '</td>' +
+        '<td><div class="member-cell"><span class="avatar">' + esc(initialsOf(addedBy)) + '</span>' + esc(addedBy) + '</div></td>' +
+        '<td>' + statusPill(it.status) + '</td>' +
+        '<td class="actions-cell">' + consumeBtn + editBtn + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ---- Filters ----
+  document.getElementById('fl_apply_btn').addEventListener('click', loadItems);
+  document.getElementById('log_filter_status').addEventListener('change', render);
+  document.getElementById('log_search').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loadItems();
+  });
+
+  window.flResetFilters = function () {
+    document.getElementById('log_search').value = '';
+    document.getElementById('log_filter_status').value = flDefaultStatus;
+    document.getElementById('log_date_from').value = '';
+    document.getElementById('log_date_to').value = '';
+    document.getElementById('log_filter_member').value = 'all';
+    loadItems();
+  };
+
+  // ---- Consume flow: modal → PATCH /v1/food-items/:id/consume ----
+  window.flAskConsume = function (id) {
+    var item = allItems.find(function (it) { return it.id === id; });
+    if (!item) return;
+    pendingConsumeId = id;
+    document.getElementById('fl_modal_item').textContent = item.name;
+    document.getElementById('fl_consume_modal').classList.add('open');
+  };
+  window.flCloseConsumeModal = function () {
+    pendingConsumeId = null;
+    document.getElementById('fl_consume_modal').classList.remove('open');
+  };
+  window.flConfirmConsume = function () {
+    if (!pendingConsumeId) return;
+    var id = pendingConsumeId;
+    var btn = document.getElementById('fl_modal_confirm');
+    btn.disabled = true;
+    authFetch('v1/food-items/' + encodeURIComponent(id) + '/consume', { method: 'PATCH' })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+      })
+      .then(function (r) {
+        if (r.ok) {
+          toast('Item marked as consumed.');
+        } else if (r.status === 409) {
+          // rule_no_double_consume — already consumed by someone else
+          toast(r.data.error || 'This item was already consumed.', true);
+        } else {
+          toast(r.data.error || 'Could not mark item as consumed.', true);
+        }
+      })
+      .catch(function () { toast('Could not mark item as consumed.', true); })
+      .then(function () {
+        btn.disabled = false;
+        flCloseConsumeModal();
+        loadItems();
+      });
+  };
+
+  // ---- Admin edit flow: modal → PUT /v1/food-items/:id ----
+  window.flOpenEditModal = function (id) {
+    var item = allItems.find(function (it) { return it.id === id; });
+    if (!item) return;
+    pendingEditId = id;
+    document.getElementById('fl_edit_name').value = item.name;
+    document.getElementById('fl_edit_qty').value = Number(item.quantity);
+    document.getElementById('fl_edit_price').value = Number(item.price);
+    document.getElementById('fl_edit_modal').classList.add('open');
+  };
+  window.flCloseEditModal = function () {
+    pendingEditId = null;
+    document.getElementById('fl_edit_modal').classList.remove('open');
+  };
+  window.flSaveEdit = function () {
+    if (!pendingEditId) return;
+    var body = {
+      name: document.getElementById('fl_edit_name').value.trim(),
+      quantity: Number(document.getElementById('fl_edit_qty').value),
+      price: Number(document.getElementById('fl_edit_price').value)
+    };
+    var btn = document.getElementById('fl_edit_save');
+    btn.disabled = true;
+    authFetch('v1/food-items/' + encodeURIComponent(pendingEditId), {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (r) {
+        if (r.ok) toast('Item updated.');
+        else toast(r.data.error || 'Could not update item.', true);
+      })
+      .catch(function () { toast('Could not update item.', true); })
+      .then(function () {
+        btn.disabled = false;
+        flCloseEditModal();
+        loadItems();
+      });
+  };
+
+  // ---- Admin remove flow: DELETE /v1/food-items/:id ----
+  window.flRemoveItem = function () {
+    if (!pendingEditId) return;
+    var item = allItems.find(function (it) { return it.id === pendingEditId; });
+    var label = item ? '"' + item.name + '"' : 'this item';
+    if (!window.confirm('Remove ' + label + ' from the food log? This cannot be undone.')) return;
+    var btn = document.getElementById('fl_edit_remove');
+    btn.disabled = true;
+    authFetch('v1/food-items/' + encodeURIComponent(pendingEditId), { method: 'DELETE' })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (r) {
+        if (r.ok) toast('Item removed.');
+        else toast(r.data.error || 'Could not remove item.', true);
+      })
+      .catch(function () { toast('Could not remove item.', true); })
+      .then(function () {
+        btn.disabled = false;
+        flCloseEditModal();
+        loadItems();
+      });
+  };
+
+  // Close modals on backdrop click
+  ['fl_consume_modal', 'fl_edit_modal'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+  });
+
+  loadItems();
+})();
+</script>
+</body>
+</html>

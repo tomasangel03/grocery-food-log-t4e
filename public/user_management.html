@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management — PantryLog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/global.css">
+<style>
+/* ===== User Management — page-specific styles ===== */
+.um-page .page-body{display:flex;flex-direction:column;gap:24px}
+
+/* Page header row */
+.um-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.um-header h1{font:700 24px var(--font-head);letter-spacing:-.02em;color:var(--color-text);margin-bottom:4px}
+.um-header .page-desc{font:400 13.5px var(--font-body);color:var(--color-text-secondary);line-height:1.6;max-width:560px}
+.um-header .admin-chip{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--font-body);color:var(--color-primary);background:#e6f3f1;border-radius:999px;padding:3px 12px;margin-left:10px;vertical-align:middle}
+
+/* Stat strip */
+.um-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.um-stats .stat-card:hover{box-shadow:var(--shadow-hover)}
+.um-stats .stat-label{margin-bottom:6px}
+.um-stats .pill{margin-top:10px}
+
+/* Table card head */
+.um-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:24px 24px 18px}
+.um-card-head h3{font:600 14px var(--font-head);color:var(--color-text);margin-bottom:3px}
+.um-card-head .card-desc{font:400 12.5px var(--font-body);color:var(--color-text-secondary)}
+.um-head-actions{display:flex;gap:10px;flex-shrink:0}
+
+/* Table card owns its padding */
+.um-table-card{padding:0;overflow:hidden}
+.um-table-card table{width:100%;border-collapse:collapse}
+.um-table-card th{text-align:left;font:600 11.5px var(--font-body);letter-spacing:.05em;text-transform:uppercase;color:var(--color-text-muted);padding:9px 24px;border-bottom:1px solid var(--color-border)}
+.um-table-card td{padding:12px 24px;border-bottom:1px solid #eef2f5;font:400 13px var(--font-body);color:var(--color-text);vertical-align:middle}
+.um-table-card tbody tr:last-child td{border-bottom:0}
+.um-table-card th.num,.um-table-card td.num{text-align:right}
+
+/* Member cell */
+.member-cell{display:flex;align-items:center;gap:12px}
+.member-cell .avatar{width:36px;height:36px;font:600 12px var(--font-body);flex-shrink:0}
+.member-cell .m-name{font:500 13.5px var(--font-body);color:var(--color-text);line-height:1.4}
+.member-cell .m-user{font:400 12px var(--font-body);color:var(--color-text-muted);line-height:1.4}
+tr.row-inactive .member-cell .m-name{color:var(--color-text-secondary)}
+tr.row-inactive .avatar{opacity:.6}
+
+/* Role select — inline compact */
+.role-select{height:34px;padding:0 30px 0 12px;font:500 12.5px var(--font-body);border-radius:8px;min-width:118px;width:auto;color:var(--color-text);border:1px solid var(--color-border);background:var(--color-surface)}
+.role-select.role-admin{color:var(--color-primary);font-weight:600}
+.role-select:disabled{background:var(--color-surface-2);color:var(--color-text-muted);cursor:not-allowed}
+
+/* Auth provider chip */
+.provider-chip{display:inline-flex;align-items:center;gap:7px;font:500 12px var(--font-body);color:#344054;border:1px solid var(--color-border);background:var(--color-surface);border-radius:999px;padding:3px 11px}
+.provider-chip svg{flex-shrink:0}
+
+/* You badge */
+.you-tag{display:inline-flex;font:600 10.5px var(--font-body);color:var(--color-primary);background:#e6f3f1;border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle}
+
+/* Row actions */
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.row-actions .btn{height:32px;padding:0 12px;font-size:12.5px}
+.btn-deactivate{color:#b42318}
+.btn-deactivate:hover{background:#fef3f2;color:#b42318}
+.btn-reactivate{color:var(--color-primary)}
+.btn-reactivate:hover{background:#e6f3f1;color:var(--color-primary)}
+
+/* Table footer */
+.um-table-foot{display:flex;align-items:center;gap:8px;padding:14px 24px;background:var(--color-surface-2);border-top:1px solid var(--color-border);font:500 12.5px var(--font-body);color:var(--color-text-secondary)}
+.um-table-foot b{color:var(--color-text);font-weight:600}
+
+/* Info banner about role rules */
+.um-info{display:flex;gap:10px;align-items:flex-start;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.25);border-radius:var(--radius-lg);padding:14px 16px}
+.um-info i{color:#026aa2;margin-top:2px;flex-shrink:0}
+.um-info .a-title{font:600 13px var(--font-body);color:var(--color-text);margin-bottom:2px}
+.um-info .a-body{font:400 12.5px var(--font-body);color:#344054;line-height:1.55}
+
+/* ===== Modals ===== */
+.modal-backdrop{position:fixed;inset:0;background:rgba(16,24,40,.4);display:none;align-items:center;justify-content:center;z-index:100;padding:24px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--color-surface);border-radius:12px;box-shadow:0 20px 24px rgba(16,24,40,.10),0 8px 8px rgba(16,24,40,.04);padding:24px;animation:umModalIn 180ms ease}
+@keyframes umModalIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+
+.um-modal{width:520px;max-width:calc(100vw - 40px)}
+.um-modal .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px}
+.um-modal .modal-head h3{font:700 16px var(--font-head);letter-spacing:-.01em;color:var(--color-text);margin-bottom:3px}
+.um-modal .modal-head p{font:400 12.5px var(--font-body);color:var(--color-text-secondary);line-height:1.5}
+.um-modal .modal-close{background:none;border:none;color:var(--color-text-muted);cursor:pointer;padding:4px;border-radius:8px;transition:all 150ms ease;flex-shrink:0}
+.um-modal .modal-close:hover{background:#f2f5f7;color:var(--color-text)}
+.um-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.um-form-grid .field{margin:0}
+.um-form-grid .field.full{grid-column:1 / -1}
+.um-modal .helper-text{font:400 12px var(--font-body);color:var(--color-text-muted);margin-top:5px}
+.um-modal .field-error-msg{display:none;align-items:center;gap:6px;font:500 12px var(--font-body);color:#b42318;margin-top:6px}
+.um-modal .field.has-error .field-error-msg{display:flex}
+.um-modal .field.has-error input,.um-modal .field.has-error select{border-color:#f04438;box-shadow:0 0 0 4px rgba(240,68,56,.10)}
+.um-modal .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--color-border)}
+
+/* Deactivate confirm modal */
+.um-confirm{width:440px;max-width:calc(100vw - 40px)}
+.um-confirm .confirm-icon{width:44px;height:44px;border-radius:999px;background:#fef3f2;color:#b42318;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.um-confirm h3{font:700 16px var(--font-head);color:var(--color-text);margin-bottom:6px}
+.um-confirm p{font:400 13px var(--font-body);color:var(--color-text-secondary);line-height:1.6;margin-bottom:20px}
+.um-confirm p b{color:var(--color-text);font-weight:600}
+.um-confirm .modal-actions{display:flex;justify-content:flex-end;gap:10px}
+.btn-danger{background:#d92d20;color:#fff}
+.btn-danger:hover{background:#b42318}
+
+/* Toast */
+.um-toast{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-success);border-radius:10px;box-shadow:0 4px 8px rgba(16,24,40,.06),0 2px 4px rgba(16,24,40,.04);padding:12px 16px;font:500 13px var(--font-body);color:var(--color-text);opacity:0;transform:translateY(8px);pointer-events:none;transition:all 150ms ease}
+.um-toast.show{opacity:1;transform:translateY(0)}
+.um-toast i{color:var(--color-success)}
+.um-toast.error{border-left-color:var(--color-danger)}
+.um-toast.error i{color:var(--color-danger)}
+
+/* Responsive */
+@media (max-width:1024px){
+  .um-stats{grid-template-columns:repeat(2,1fr)}
+  .um-form-grid{grid-template-columns:1fr}
+}
+@media (max-width:768px){
+  .um-stats{grid-template-columns:1fr}
+  .um-header{flex-direction:column}
+  .um-table-card{overflow-x:auto}
+}
+</style>
+</head>
+<body data-page="user_management">
+<div class="um-page">
+  <div class="app-shell" id="appShell">
+    <!-- sidebar + topbar injected by shell.js -->
+    <main class="page-main">
+      <div class="page-body">
+
+        <!-- Page header -->
+        <div class="um-header">
+          <div>
+            <h1>User Management <span class="admin-chip"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Admin only</span></h1>
+            <div class="page-desc">Manage household members and their roles. Upgrade self-registered Members to Admin, or deactivate accounts that no longer need access.</div>
+          </div>
+          <a class="btn btn-secondary" id="um_back" href="dashboard.html">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            Dashboard
+          </a>
+        </div>
+
+        <!-- Stat strip -->
+        <section class="um-stats" aria-label="Member statistics">
+          <div class="card stat-card">
+            <div class="stat-label">Total members</div>
+            <div class="stat-value" id="stat_total">—</div>
+            <span class="pill pill-neutral"><span class="dot"></span>All household accounts</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Active</div>
+            <div class="stat-value" id="stat_active">—</div>
+            <span class="pill pill-success"><span class="dot"></span>Can sign in &amp; log food</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Admins</div>
+            <div class="stat-value" id="stat_admins">—</div>
+            <span class="pill pill-neutral"><span class="dot"></span>Full management access</span>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-label">Deactivated</div>
+            <div class="stat-value" id="stat_inactive">—</div>
+            <span class="pill pill-warning"><span class="dot"></span>Sign-in blocked</span>
+          </div>
+        </section>
+
+        <!-- Role rules info -->
+        <div class="um-info" role="note">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          <div>
+            <div class="a-title">Roles &amp; safety rules</div>
+            <div class="a-body">Self-registered accounts always start as <b>Member</b> — this page is the only place they can be upgraded to <b>Admin</b>. You cannot deactivate your own account.</div>
+          </div>
+        </div>
+
+        <!-- Members table -->
+        <section class="card um-table-card" id="um_table">
+          <div class="um-card-head">
+            <div>
+              <h3>Household Members</h3>
+              <div class="card-desc">Name, contact details, role and sign-in provider for every account.</div>
+            </div>
+            <div class="um-head-actions">
+              <button class="btn btn-primary btn-sm" id="um_add_btn" onclick="umOpenAddModal()">
+                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                Add Member
+              </button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Auth provider</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="um_tbody">
+              <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+          <div class="um-table-foot">
+            <b id="um_foot_count">0</b>&nbsp;household members
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Add Member modal ===== -->
+<div class="modal-backdrop" id="um_add_backdrop" role="dialog" aria-modal="true" aria-labelledby="um_add_title">
+  <div class="modal um-modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="um_add_title">Add household member</h3>
+        <p>Create a local account for a new member. They can change their password after first sign-in.</p>
+      </div>
+      <button class="modal-close" onclick="umCloseAddModal()" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="um-form-grid">
+      <div class="field" data-field="first_name">
+        <label for="um_first_name">First name</label>
+        <input type="text" id="um_first_name" autocomplete="off">
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+      <div class="field" data-field="last_name">
+        <label for="um_last_name">Last name</label>
+        <input type="text" id="um_last_name" autocomplete="off">
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+      <div class="field" data-field="username">
+        <label for="um_username">Username</label>
+        <input type="text" id="um_username" autocomplete="off">
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+      <div class="field" data-field="email">
+        <label for="um_email">Email</label>
+        <input type="email" id="um_email" autocomplete="off">
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+      <div class="field" data-field="password">
+        <label for="um_password">Initial password</label>
+        <input type="password" id="um_password" autocomplete="new-password">
+        <div class="helper-text">At least 8 characters.</div>
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+      <div class="field" data-field="role">
+        <label for="um_role">Role</label>
+        <select id="um_role">
+          <option value="member" selected>Member</option>
+          <option value="admin">Admin</option>
+        </select>
+        <span class="field-error-msg"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span></span></span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="umCloseAddModal()">Cancel</button>
+      <button class="btn btn-primary" id="um_add_save" onclick="umSubmitAdd()">
+        <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+        Add member
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Deactivate confirm modal ===== -->
+<div class="modal-backdrop" id="um_confirm_backdrop" role="dialog" aria-modal="true" aria-labelledby="um_confirm_title">
+  <div class="modal um-confirm">
+    <div class="confirm-icon"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></div>
+    <h3 id="um_confirm_title">Deactivate member?</h3>
+    <p><b><span id="um_confirm_name"></span></b> will no longer be able to sign in or log food. Their history stays intact and you can reactivate them later.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="umCloseConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="um_confirm_btn" onclick="umConfirmDeactivate()">
+        <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
+        Deactivate
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="um-toast" id="um_toast" role="status" aria-live="polite">
+  <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+  <span id="um_toast_msg"></span>
+</div>
+
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return; // guard redirected to login
+
+  // rule_admin_only_user_mgmt — Members are bounced to the dashboard.
+  if (Shell.user.role !== 'admin') {
+    window.location.replace('dashboard.html');
+    return;
+  }
+
+  var users = [];
+  var pendingDeactivateId = null;
+  var toastTimer = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function initialsOf(u) {
+    var a = (u.first_name || '')[0] || (u.username || '?')[0] || '?';
+    var b = (u.last_name || '')[0] || (u.username || '')[1] || '';
+    return (a + b).toUpperCase();
+  }
+  function fullName(u) {
+    return ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+  }
+  function toast(msg, isError) {
+    var el = document.getElementById('um_toast');
+    document.getElementById('um_toast_msg').textContent = msg;
+    el.classList.toggle('error', !!isError);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3200);
+  }
+
+  var GOOGLE_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18A10.97 10.97 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>';
+
+  function providerChip(p) {
+    if (p === 'google') return '<span class="provider-chip">' + GOOGLE_SVG + 'Google</span>';
+    return '<span class="provider-chip"><i class="fa-solid fa-house-lock" aria-hidden="true" style="font-size:11px;color:#98a2b3"></i>Local</span>';
+  }
+
+  // ---- Load members from GET /v1/users ----
+  function loadUsers() {
+    authFetch('v1/users')
+      .then(function (res) {
+        if (res.status === 403) {
+          window.location.replace('dashboard.html');
+          throw new Error('forbidden');
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        users = data.users || [];
+        render();
+      })
+      .catch(function (err) {
+        if (err && err.message === 'forbidden') return;
+        console.error('load users failed', err);
+        document.getElementById('um_tbody').innerHTML =
+          '<tr><td colspan="6" class="table-empty">Could not load members.</td></tr>';
+      });
+  }
+
+  function render() {
+    // Stats
+    document.getElementById('stat_total').textContent = users.length;
+    document.getElementById('stat_active').textContent = users.filter(function (u) { return u.is_active; }).length;
+    document.getElementById('stat_admins').textContent = users.filter(function (u) { return u.role === 'admin'; }).length;
+    document.getElementById('stat_inactive').textContent = users.filter(function (u) { return !u.is_active; }).length;
+    document.getElementById('um_foot_count').textContent = users.length;
+
+    var tbody = document.getElementById('um_tbody');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No members yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(function (u) {
+      var isSelf = u.id === Shell.user.id;
+      var roleSelect =
+        '<select class="role-select' + (u.role === 'admin' ? ' role-admin' : '') + '"' +
+        ' aria-label="Role for ' + esc(fullName(u)) + '"' +
+        (isSelf ? ' disabled title="You cannot change your own role"' : ' onchange="umRoleChange(this, \'' + esc(u.id) + '\')"') + '>' +
+          '<option value="member"' + (u.role === 'member' ? ' selected' : '') + '>Member</option>' +
+          '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
+        '</select>';
+
+      var statusPill = u.is_active
+        ? '<span class="pill pill-success"><span class="dot"></span>Active</span>'
+        : '<span class="pill pill-danger"><span class="dot"></span>Deactivated</span>';
+
+      var actionBtn;
+      if (isSelf) {
+        // rule_no_self_deactivate — disabled on your own row
+        actionBtn = '<button class="btn btn-ghost btn-sm" disabled title="You cannot deactivate yourself" aria-label="Cannot deactivate your own account">' +
+          '<i class="fa-solid fa-lock" aria-hidden="true"></i> Deactivate</button>';
+      } else if (u.is_active) {
+        actionBtn = '<button class="btn btn-ghost btn-sm btn-deactivate" onclick="umAskDeactivate(\'' + esc(u.id) + '\')">' +
+          '<i class="fa-solid fa-user-slash" aria-hidden="true"></i> Deactivate</button>';
+      } else {
+        actionBtn = '<button class="btn btn-ghost btn-sm btn-reactivate" onclick="umReactivate(\'' + esc(u.id) + '\')">' +
+          '<i class="fa-solid fa-user-check" aria-hidden="true"></i> Reactivate</button>';
+      }
+
+      return '<tr' + (u.is_active ? '' : ' class="row-inactive"') + ' data-status="' + (u.is_active ? 'active' : 'inactive') + '">' +
+        '<td><div class="member-cell">' +
+          '<div class="avatar' + (u.is_active ? '' : ' neutral') + '">' + esc(initialsOf(u)) + '</div>' +
+          '<div><div class="m-name">' + esc(fullName(u)) + (isSelf ? ' <span class="you-tag">You</span>' : '') + '</div>' +
+          '<div class="m-user">@' + esc(u.username) + '</div></div>' +
+        '</div></td>' +
+        '<td>' + esc(u.email) + '</td>' +
+        '<td>' + roleSelect + '</td>' +
+        '<td>' + providerChip(u.auth_provider) + '</td>' +
+        '<td class="status-cell">' + statusPill + '</td>' +
+        '<td class="num"><div class="row-actions">' + actionBtn + '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ---- Role change: PATCH /v1/users/:id { role } ----
+  window.umRoleChange = function (sel, id) {
+    var newRole = sel.value;
+    sel.disabled = true;
+    authFetch('v1/users/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: JSON.stringify({ role: newRole })
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (r) {
+        if (r.ok) toast('Role updated.');
+        else toast(r.data.error || 'Could not update role.', true);
+      })
+      .catch(function () { toast('Could not update role.', true); })
+      .then(loadUsers);
+  };
+
+  // ---- Deactivate / reactivate: PATCH /v1/users/:id { is_active } ----
+  window.umAskDeactivate = function (id) {
+    var u = users.find(function (x) { return x.id === id; });
+    if (!u) return;
+    pendingDeactivateId = id;
+    document.getElementById('um_confirm_name').textContent = fullName(u);
+    document.getElementById('um_confirm_backdrop').classList.add('open');
+  };
+  window.umCloseConfirm = function () {
+    pendingDeactivateId = null;
+    document.getElementById('um_confirm_backdrop').classList.remove('open');
+  };
+  window.umConfirmDeactivate = function () {
+    if (!pendingDeactivateId) return;
+    patchActive(pendingDeactivateId, false, 'Member deactivated.');
+    umCloseConfirm();
+  };
+  window.umReactivate = function (id) {
+    patchActive(id, true, 'Member reactivated.');
+  };
+  function patchActive(id, active, okMsg) {
+    authFetch('v1/users/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: active })
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (r) {
+        if (r.ok) toast(okMsg);
+        else toast(r.data.error || 'Could not update member.', true);
+      })
+      .catch(function () { toast('Could not update member.', true); })
+      .then(loadUsers);
+  }
+
+  // ---- Add member modal: POST /v1/users ----
+  window.umOpenAddModal = function () {
+    umClearErrors();
+    ['um_first_name', 'um_last_name', 'um_username', 'um_email', 'um_password'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('um_role').value = 'member';
+    document.getElementById('um_add_backdrop').classList.add('open');
+  };
+  window.umCloseAddModal = function () {
+    document.getElementById('um_add_backdrop').classList.remove('open');
+  };
+  function umClearErrors() {
+    document.querySelectorAll('#um_add_backdrop .field.has-error').forEach(function (f) {
+      f.classList.remove('has-error');
+    });
+  }
+  function umShowErrors(errors) {
+    Object.keys(errors || {}).forEach(function (key) {
+      var field = document.querySelector('#um_add_backdrop .field[data-field="' + key + '"]');
+      if (!field) return;
+      field.classList.add('has-error');
+      var msg = field.querySelector('.field-error-msg span');
+      if (msg) msg.textContent = errors[key];
+    });
+  }
+  window.umSubmitAdd = function () {
+    umClearErrors();
+    var body = {
+      first_name: document.getElementById('um_first_name').value.trim(),
+      last_name: document.getElementById('um_last_name').value.trim(),
+      username: document.getElementById('um_username').value.trim(),
+      email: document.getElementById('um_email').value.trim(),
+      password: document.getElementById('um_password').value,
+      role: document.getElementById('um_role').value
+    };
+    var btn = document.getElementById('um_add_save');
+    btn.disabled = true;
+    authFetch('v1/users', { method: 'POST', body: JSON.stringify(body) })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (r) {
+        btn.disabled = false;
+        if (r.ok) {
+          umCloseAddModal();
+          toast('Member added.');
+          loadUsers();
+        } else if (r.data && r.data.errors) {
+          umShowErrors(r.data.errors);
+        } else {
+          toast((r.data && r.data.error) || 'Could not add member.', true);
+        }
+      })
+      .catch(function () {
+        btn.disabled = false;
+        toast('Could not add member.', true);
+      });
+  };
+
+  // Close modals on backdrop click
+  ['um_add_backdrop', 'um_confirm_backdrop'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+  });
+
+  loadUsers();
+})();
+</script>
+</body>
+</html>

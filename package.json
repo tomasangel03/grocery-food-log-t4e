@@ -1,0 +1,19 @@
+{
+  "name": "household-grocery-food-log",
+  "version": "1.0.0",
+  "description": "Household Grocery Food Log — shopping trips, food inventory with consume lifecycle, auth (local + Google OAuth), admin activity audit, and user management.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.11.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "uuid": "^9.0.1",
+    "google-auth-library": "^9.14.0"
+  }
+}

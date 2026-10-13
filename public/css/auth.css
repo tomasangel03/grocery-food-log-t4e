@@ -1,0 +1,114 @@
+/* ===== PantryLog — global design tokens + auth pages ===== */
+:root{
+  --color-primary:#0f766e;
+  --color-secondary:#115e59;
+  --color-background:#f6f8f9;
+  --color-surface:#ffffff;
+  --color-border:#e4e9ec;
+  --color-text:#111827;
+  --color-text-secondary:#4b5563;
+  --color-text-muted:#9aa3ad;
+  --color-error:#f04438;
+  --radius-md:10px;
+  --radius-lg:12px;
+  --font-head:'Manrope',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);background:var(--color-background);color:var(--color-text);}
+
+/* ---- Base controls (teal-primary, overrides Bootstrap defaults) ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 14px var(--font-body);padding:10px 16px;border-radius:var(--radius-md);border:1px solid transparent;cursor:pointer;transition:all 150ms ease;text-decoration:none;}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(15,118,110,0.15);}
+.btn-primary{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+.btn-primary:hover{background:var(--color-secondary);border-color:var(--color-secondary);color:#fff;}
+.btn-secondary{background:var(--color-surface);border-color:var(--color-border);color:var(--color-text);}
+.btn-secondary:hover{background:#f2f5f7;border-color:#d4dbe0;color:var(--color-text);}
+
+input[type="text"],input[type="email"],input[type="password"]{
+  display:block;width:100%;padding:10px 14px;border:1px solid var(--color-border);
+  border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);
+  font:400 14px var(--font-body);transition:border-color 150ms ease,box-shadow 150ms ease;
+}
+input[type="text"]:focus,input[type="email"]:focus,input[type="password"]:focus{
+  outline:none;border-color:var(--color-primary);box-shadow:0 0 0 4px rgba(15,118,110,0.12);
+}
+input::placeholder{color:var(--color-text-muted);}
+
+/* ===== Login / Register shell — PantryLog ===== */
+.login-shell{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--color-background);padding:32px 20px;}
+
+.login-card{width:100%;max-width:400px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg,12px);box-shadow:0 1px 2px rgba(16,24,40,0.05),0 1px 3px rgba(16,24,40,0.06);padding:36px 32px 28px;}
+
+/* ---- Brand ---- */
+.login-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;}
+.login-brand .logo-mark{width:36px;height:36px;border-radius:10px;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.login-brand .logo-name{font:800 18px var(--font-head,'Manrope',sans-serif);letter-spacing:-0.02em;color:var(--color-text);}
+
+/* ---- Header ---- */
+.login-header{text-align:center;margin-bottom:24px;}
+.login-header h1{font:700 24px var(--font-head,'Manrope',sans-serif);letter-spacing:-0.02em;color:var(--color-text);margin:0 0 8px;}
+.login-header p{font:400 13.5px var(--font-body,'Inter',sans-serif);line-height:1.6;color:var(--color-text-secondary);margin:0;}
+
+/* ---- Error banner ---- */
+.login-error{display:flex;align-items:flex-start;gap:9px;background:#fef3f2;border:1px solid rgba(240,68,56,0.25);color:#b42318;border-radius:var(--radius-lg,12px);padding:11px 14px;font:500 12.5px var(--font-body,'Inter',sans-serif);line-height:1.5;margin-bottom:18px;}
+.login-error svg{flex-shrink:0;margin-top:1px;}
+.login-error[hidden]{display:none;}
+
+/* ---- Form ---- */
+.login-form{display:flex;flex-direction:column;gap:16px;}
+.login-form .field label{display:block;font:500 12px var(--font-body,'Inter',sans-serif);color:var(--color-text-secondary);margin-bottom:6px;}
+.login-form .field input[type="text"],
+.login-form .field input[type="email"],
+.login-form .field input[type="password"]{width:100%;}
+
+.input-wrap{position:relative;}
+.input-wrap input{padding-right:44px;}
+.pwd-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;border-radius:8px;color:var(--color-text-muted);cursor:pointer;transition:all 150ms ease;}
+.pwd-toggle:hover{color:var(--color-text);background:#f2f5f7;}
+.pwd-toggle:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(15,118,110,0.15);}
+
+/* ---- Options row ---- */
+.login-options{display:flex;align-items:center;justify-content:space-between;margin-top:-4px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;font:400 12.5px var(--font-body,'Inter',sans-serif);color:var(--color-text-secondary);cursor:pointer;user-select:none;}
+.checkbox-row input[type="checkbox"]{width:15px;height:15px;accent-color:var(--color-primary);cursor:pointer;margin:0;}
+.login-options a{font:500 12.5px var(--font-body,'Inter',sans-serif);color:var(--color-primary);text-decoration:none;transition:color 150ms ease;}
+.login-options a:hover{color:var(--color-secondary);text-decoration:underline;}
+
+/* ---- Submit ---- */
+.login-form .btn-primary{width:100%;justify-content:center;margin-top:2px;}
+.login-form .btn-primary.is-loading{opacity:0.7;pointer-events:none;}
+
+/* ---- Divider ---- */
+.login-divider{display:flex;align-items:center;gap:12px;margin:20px 0;}
+.login-divider::before,.login-divider::after{content:"";flex:1;height:1px;background:var(--color-border);}
+.login-divider span{font:500 12px var(--font-body,'Inter',sans-serif);color:var(--color-text-muted);white-space:nowrap;}
+
+/* ---- Google button ---- */
+.btn-google{width:100%;justify-content:center;gap:10px;display:flex;align-items:center;}
+.btn-google .g-icon{flex-shrink:0;display:block;}
+
+/* ---- Demo hint ---- */
+.demo-hint{margin-top:20px;background:rgba(15,118,110,0.05);border:1px solid rgba(15,118,110,0.14);border-radius:var(--radius-md,10px);padding:10px 14px;font:400 12px var(--font-body,'Inter',sans-serif);color:var(--color-text-secondary);line-height:1.55;text-align:center;}
+.demo-hint b{font-weight:600;color:var(--color-secondary);}
+
+/* ---- Footer / register link ---- */
+.login-footer{margin-top:20px;padding-top:18px;border-top:1px solid var(--color-border);text-align:center;}
+.register-link{background:none;border:none;padding:0;cursor:pointer;font:400 13px var(--font-body,'Inter',sans-serif);color:var(--color-text-secondary);transition:color 150ms ease;border-radius:6px;}
+.register-link b{font-weight:600;color:var(--color-primary);transition:color 150ms ease;}
+.register-link:hover b{color:var(--color-secondary);text-decoration:underline;}
+.register-link:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(15,118,110,0.15);}
+
+/* ---- Below-card meta ---- */
+.login-meta{text-align:center;margin-top:20px;font:400 12px var(--font-body,'Inter',sans-serif);color:var(--color-text-muted);}
+
+/* ---- Field-level validation ---- */
+.login-form .field input.field-error{border-color:var(--color-error);}
+.login-form .field .error-msg{display:flex;align-items:center;gap:6px;font:500 12px var(--font-body,'Inter',sans-serif);color:#b42318;margin-top:6px;}
+
+/* ---- Responsive ---- */
+@media (max-width:480px){
+  .login-card{padding:28px 22px 24px;}
+  .login-shell{padding:20px 16px;}
+}
