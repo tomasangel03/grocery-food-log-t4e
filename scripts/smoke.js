@@ -83,23 +83,52 @@ const cleanup = { userIds: [], tripIds: [] };
     `status=${trip.status} body=${JSON.stringify(trip.json)}`);
 
   // ── PATCH consume ────────────────────────────────────────────────
-  const itemId = trip.json?.items?.[0]?.id;
-  const consume = await req('PATCH', `/v1/food-items/${itemId}/consume`, { token: memberToken });
-  report(consume.status === 200 && consume.json?.item?.status === 'consumed'
-      && !!consume.json?.item?.consumed_at,
-    'consume — PATCH /v1/food-items/:id/consume returns 200, status=consumed',
-    `status=${consume.status} body=${JSON.stringify(consume.json)}`);
-  const consumeAgain = await req('PATCH', `/v1/food-items/${itemId}/consume`, { token: memberToken });
+  const milk = trip.json?.items?.[0];
+  const bread = trip.json?.items?.[1];
+  const partial = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 1, note: 'breakfast' }
+  });
+  report(partial.status === 200 && partial.json?.item?.status === 'available'
+      && Number(partial.json?.item?.quantity_remaining) === 1,
+    'consume — partial amount stays available with 1 remaining',
+    `status=${partial.status} body=${JSON.stringify(partial.json)}`);
+  const finish = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 1 }
+  });
+  report(finish.status === 200 && finish.json?.item?.status === 'consumed'
+      && !!finish.json?.item?.consumed_at,
+    'consume — using the rest marks the item consumed',
+    `status=${finish.status} body=${JSON.stringify(finish.json)}`);
+  const consumeAgain = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 1 }
+  });
   report(consumeAgain.status === 409,
     'consume — double consume rejected with 409',
     `status=${consumeAgain.status}`);
+  const tooMuch = await req('PATCH', `/v1/food-items/${bread?.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 5 }
+  });
+  report(tooMuch.status === 400,
+    'consume — amount above what is left is rejected with 400',
+    `status=${tooMuch.status}`);
+  const priced = await req('GET', '/v1/food-items?status=all&price=3&priceOp=gte', { token: adminToken });
+  const pricedIds = (priced.json?.items || []).map((item) => item.id);
+  report(priced.status === 200 && pricedIds.includes(milk?.id) && !pricedIds.includes(bread?.id),
+    'price filter — gte 3 keeps the 3.50 item and drops the 2.25 item',
+    `status=${priced.status}`);
 
   // ── dashboard summary ────────────────────────────────────────────
   const dash = await req('GET', '/v1/dashboard/summary', { token: adminToken });
   report(dash.status === 200
       && Array.isArray(dash.json?.recent_items)
       && Array.isArray(dash.json?.inventory_by_unit)
-      && typeof dash.json?.this_month?.total_spent === 'number',
+      && typeof dash.json?.this_month?.total_spent === 'number'
+      && typeof dash.json?.recent_consumption?.percent === 'number'
+      && typeof dash.json?.consumed_this_week === 'number',
     'dashboard summary — GET /v1/dashboard/summary returns 200 with all sections',
     `status=${dash.status} body=${JSON.stringify(dash.json)}`);
 

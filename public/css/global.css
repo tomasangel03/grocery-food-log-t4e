@@ -3,9 +3,8 @@
    (Household Grocery Food Log)
    Layout contract:
    - .app-shell  : flex row, fills viewport
-   - .app-sidebar: fixed-width flex child, flex-shrink:0
+   - .app-sidebar: fixed-width flex child, stuck to the viewport while the page scrolls
    - .page-main  : flex:1, min-width:0
-   - No float / absolute / fixed positioning on desktop.
    - Mobile (<=768px): sidebar becomes an off-canvas drawer.
    ============================================================ */
 
@@ -47,6 +46,11 @@ button{font:inherit;cursor:pointer;}
 .app-sidebar{
   width:var(--sidebar-w);
   flex-shrink:0;
+  align-self:flex-start;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
   display:flex;
   flex-direction:column;
   background:var(--color-surface);

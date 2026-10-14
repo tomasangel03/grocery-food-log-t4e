@@ -100,12 +100,18 @@ const cleanup = { userIds: [], tripIds: [] };
 
   // ── (5) consume once-only rule ──────────────────────────────────
   const targetItem = smokeItems[0];
-  const consume1 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, { token: memberToken });
+  const consume1 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, {
+    token: memberToken,
+    body: { quantity: Number(targetItem.quantity) }
+  });
   ok(consume1.status === 200, '(5) first consume returns 200', JSON.stringify(consume1.json));
   ok(consume1.json.item.status === 'consumed', "(5) item status set to 'consumed'");
   ok(consume1.json.item.consumed_by_user_id === memberId, '(5) consumed_by recorded');
   ok(!!consume1.json.item.consumed_at, '(5) consumed_at recorded');
-  const consume2 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, { token: memberToken });
+  const consume2 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 1 }
+  });
   ok(consume2.status === 409, '(5) second consume returns 409', `got ${consume2.status}`);
 
   // ── (6) activity log admin-only ─────────────────────────────────

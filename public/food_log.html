@@ -34,6 +34,40 @@
 .date-range input[type="date"]{width:150px}
 .date-range .sep{font:400 12px var(--font-body);color:var(--color-text-muted)}
 .filter-actions{display:flex;gap:8px;margin-left:auto}
+.status-toggle{display:inline-flex;border:1px solid var(--color-border);border-radius:8px;overflow:hidden;background:#fff}
+.status-toggle button{border:0;background:transparent;padding:8px 12px;font:600 12.5px var(--font-body);color:var(--color-text-secondary)}
+.status-toggle button+button{border-left:1px solid var(--color-border)}
+.status-toggle button.active{background:var(--color-primary-soft);color:var(--color-primary)}
+.price-filter{display:flex;gap:8px;align-items:center}
+.price-filter input{width:110px}
+.price-filter select{min-width:210px}
+
+/* ---------- Trip cards ---------- */
+.trip-list{display:flex;flex-direction:column;gap:16px}
+.trip-card{padding:0;overflow:hidden}
+.trip-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 22px 14px;flex-wrap:wrap}
+.trip-head h3{font:600 15px var(--font-head);letter-spacing:-0.01em}
+.trip-head .trip-meta{font:400 12.5px var(--font-body);color:var(--color-text-secondary);margin-top:3px}
+.trip-progress{min-width:220px;flex:1;max-width:340px}
+.trip-progress-meta{display:flex;justify-content:space-between;gap:12px;font:500 12px var(--font-body);color:var(--color-text-secondary);margin-bottom:6px}
+.trip-progress-track{height:8px;border-radius:999px;background:#e8eef2;overflow:hidden}
+.trip-progress-fill{height:100%;background:var(--color-primary);border-radius:999px}
+.trip-card table{width:100%;border-collapse:collapse}
+.trip-card th{text-align:left;font:600 11.5px var(--font-body);letter-spacing:.05em;text-transform:uppercase;color:var(--color-text-muted);padding:9px 14px;border-bottom:1px solid var(--color-border)}
+.trip-card td{padding:11px 14px;border-bottom:1px solid #eef2f5;font:400 13px var(--font-body);color:var(--color-text);vertical-align:middle}
+.trip-card tbody tr:last-child td{border-bottom:0}
+.trip-card td.num,.trip-card th.num{text-align:right;font-variant-numeric:tabular-nums}
+.trip-card td.item-name{font:500 13.5px var(--font-body);color:var(--color-text)}
+.history-btn{width:28px;height:28px;border:1px solid var(--color-border);border-radius:7px;background:#fff;color:var(--color-text-secondary);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.history-btn[aria-expanded="true"]{background:var(--color-primary-soft);color:var(--color-primary);border-color:transparent}
+.history-row td{background:#f8fafb;padding-top:0}
+.history-panel{padding:4px 4px 8px}
+.history-panel ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.history-panel li{font:400 12.5px var(--font-body);color:var(--color-text-secondary)}
+.history-panel .when{color:var(--color-text);font-weight:600}
+.history-empty{font:400 12.5px var(--font-body);color:var(--color-text-muted)}
+.fl-pager{display:flex;align-items:center;justify-content:flex-end;gap:14px;font:500 12.5px var(--font-body);color:var(--color-text-secondary)}
+.fl-pager .pager-actions{display:flex;gap:8px}
 
 /* ---------- Table card ---------- */
 .fl-table-card{padding:0;overflow:hidden}
@@ -77,6 +111,9 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
 .fl-modal p b{color:var(--color-text);font-weight:600}
 .fl-modal .modal-actions{display:flex;justify-content:flex-end;gap:10px}
 .fl-modal .field{margin-bottom:14px}
+.fl-modal textarea{width:100%;min-height:72px;resize:vertical;border:1px solid var(--color-border);border-radius:8px;padding:9px 12px;font:400 13.5px var(--font-body);color:var(--color-text);outline:none}
+.fl-modal textarea:focus{border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(14,122,111,.12)}
+.fl-modal .remain-hint{font:500 12.5px var(--font-body);color:var(--color-text-secondary);margin-top:-8px;margin-bottom:14px}
 
 /* ---------- Toast ---------- */
 .fl-toast{position:fixed;bottom:24px;right:24px;z-index:110;display:flex;align-items:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-border);border-left:3px solid var(--color-success);border-radius:10px;box-shadow:0 4px 8px rgba(16,24,40,0.06),0 2px 4px rgba(16,24,40,0.04);padding:12px 16px;font:500 13px var(--font-body);color:var(--color-text);opacity:0;transform:translateY(8px);pointer-events:none;transition:all 150ms ease}
@@ -93,7 +130,12 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
 @media (max-width:768px){
   .fl-stat-grid{grid-template-columns:1fr}
   .filter-bar{flex-direction:column;align-items:stretch}
-  .search-wrap,.date-range input[type="date"],.filter-bar select{width:100%;min-width:0}
+  .search-wrap,.date-range input[type="date"],.filter-bar select,.price-filter,.price-filter input,.price-filter select{width:100%;min-width:0}
+  .price-filter{flex-direction:column;align-items:stretch}
+  .trip-progress{max-width:none;width:100%}
+  .status-toggle{width:100%}
+  .status-toggle button{flex:1}
+  .trip-card{overflow-x:auto}
   .date-range{flex-wrap:wrap}
   .fl-table-card{overflow-x:auto}
 }
@@ -147,12 +189,12 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
             </div>
           </div>
           <div class="field">
-            <label for="log_filter_status">Status</label>
-            <select id="log_filter_status">
-              <option value="available" selected>Available</option>
-              <option value="consumed">Consumed</option>
-              <option value="all">All items</option>
-            </select>
+            <label id="log_filter_status_label">Show</label>
+            <div class="status-toggle" role="group" aria-labelledby="log_filter_status_label">
+              <button type="button" data-status="available" class="active" aria-pressed="true" onclick="flSetStatus('available')">In inventory</button>
+              <button type="button" data-status="consumed" aria-pressed="false" onclick="flSetStatus('consumed')">Consumed</button>
+              <button type="button" data-status="all" aria-pressed="false" onclick="flSetStatus('all')">Both</button>
+            </div>
           </div>
           <div class="field">
             <label for="log_date_from">Purchase date</label>
@@ -168,6 +210,16 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
               <option value="all" selected>All members</option>
             </select>
           </div>
+          <div class="field">
+            <label for="log_price">Price</label>
+            <div class="price-filter">
+              <input type="number" id="log_price" min="0" step="0.01" placeholder="0.00" aria-label="Price amount">
+              <select id="log_price_op" aria-label="Price comparison">
+                <option value="gte">Greater than or equal to</option>
+                <option value="lte">Less than or equal to</option>
+              </select>
+            </div>
+          </div>
           <div class="filter-actions">
             <button class="btn btn-secondary" id="fl_apply_btn">
               <i class="fa-solid fa-filter" aria-hidden="true"></i>
@@ -177,48 +229,34 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
           </div>
         </section>
 
-        <!-- ===== Table card ===== -->
-        <section class="card fl-table-card" id="log_table">
-          <div class="card-head">
-            <div>
-              <h3>Food items</h3>
-              <div class="card-desc">Consumed items are hidden by default — switch the status filter to see them.</div>
-            </div>
-          </div>
-          <table id="fl_table">
-            <thead>
-              <tr>
-                <th scope="col">Item Name</th>
-                <th scope="col" class="num">Quantity</th>
-                <th scope="col">Unit</th>
-                <th scope="col" class="num">Price</th>
-                <th scope="col">Purchase Date</th>
-                <th scope="col">Added By</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="actions-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="log_table_body">
-              <tr><td colspan="8" class="table-empty">Loading…</td></tr>
-            </tbody>
-          </table>
+        <!-- ===== Trip cards ===== -->
+        <div class="trip-list" id="fl_trip_list">
+          <section class="card trip-card"><p class="table-empty">Loading…</p></section>
+        </div>
 
-          <!-- Empty state -->
-          <div class="fl-empty" id="fl_empty">
-            <div class="empty-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></div>
-            <h4>No items match your filters</h4>
-            <p>Try widening the date range, clearing the search, or switching the status filter to &ldquo;All items&rdquo;.</p>
-            <button class="btn btn-secondary btn-sm" onclick="flResetFilters()">
-              <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-              Reset filters
+        <div class="fl-empty" id="fl_empty">
+          <div class="empty-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></div>
+          <h4>No items match your filters</h4>
+          <p>Try widening the date range, clearing the search, or switching to Both.</p>
+          <button class="btn btn-secondary btn-sm" onclick="flResetFilters()">
+            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+            Reset filters
+          </button>
+        </div>
+
+        <div class="fl-pager" id="fl_pager" hidden>
+          <span id="fl_pager_label"></span>
+          <div class="pager-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="fl_pager_prev">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+              Previous
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="fl_pager_next">
+              Next
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
-
-          <div class="fl-table-foot" id="fl_table_foot">
-            Showing <b id="fl_count">0</b>&nbsp;of&nbsp;<b id="fl_total_count">0</b>&nbsp;logged items
-            <span class="foot-hint">Tip: marking an item as consumed records who consumed it and when.</span>
-          </div>
-        </section>
+        </div>
 
       </div>
     </main>
@@ -229,13 +267,22 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
 <div class="fl-modal-backdrop" id="fl_consume_modal" role="dialog" aria-modal="true" aria-labelledby="fl_modal_title">
   <div class="fl-modal">
     <div class="modal-icon"><i class="fa-solid fa-utensils" aria-hidden="true"></i></div>
-    <h3 id="fl_modal_title">Mark as consumed?</h3>
-    <p>You are about to mark <b><span id="fl_modal_item"></span></b> as consumed. This records you as the consumer with today's date and removes it from the available inventory. This action cannot be repeated.</p>
+    <h3 id="fl_modal_title">Log consumption</h3>
+    <p>How much of <b><span id="fl_modal_item"></span></b> did you use? The date is saved with the time, and the food log shows the date.</p>
+    <p class="remain-hint" id="fl_consume_remaining"></p>
+    <div class="field">
+      <label for="fl_consume_qty">Amount used</label>
+      <input type="number" id="fl_consume_qty" min="0" step="any" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label for="fl_consume_note">Notes</label>
+      <textarea id="fl_consume_note" maxlength="1000" placeholder="Optional — how it was used"></textarea>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="flCloseConsumeModal()">Cancel</button>
       <button class="btn btn-primary" id="fl_modal_confirm" onclick="flConfirmConsume()">
         <i class="fa-solid fa-check" aria-hidden="true"></i>
-        Mark as consumed
+        Log consumption
       </button>
     </div>
   </div>
@@ -287,8 +334,12 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
 
   var isAdmin = Shell.user.role === 'admin';
   var allItems = [];      // last fetched set (status=all + server-side filters)
+  var flStatus = 'available';
   var flDefaultStatus = 'available'; // becomes 'all' when FEATURE_SHOW_CONSUMED_DEFAULT is on
   var flAppliedDefault = false;
+  var flPage = 1;
+  var PAGE_SIZE = 10;
+  var openHistory = {};
   var pendingConsumeId = null;
   var pendingEditId = null;
   var toastTimer = null;
@@ -322,6 +373,54 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
       ? '<span class="pill pill-neutral"><span class="dot"></span>Consumed</span>'
       : '<span class="pill pill-success"><span class="dot"></span>Available</span>';
   }
+  function dateKey(d) {
+    if (!d) return 0;
+    var s = String(d);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    var t = new Date(s).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  function syncStatusButtons() {
+    document.querySelectorAll('.status-toggle button').forEach(function (btn) {
+      var on = btn.getAttribute('data-status') === flStatus;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function qtyLabel(it) {
+    var bought = Number(it.quantity);
+    var left = it.quantity_remaining == null ? bought : Number(it.quantity_remaining);
+    if (Math.abs(left - bought) < 0.001) return String(left);
+    return left + ' of ' + bought;
+  }
+  function groupTrips(items) {
+    var map = {};
+    var order = [];
+    items.forEach(function (it) {
+      var id = it.shopping_trip_id;
+      if (!map[id]) {
+        map[id] = {
+          id: id,
+          trip_date: it.trip_date,
+          trip_created_at: it.trip_created_at,
+          store_name: it.store_name,
+          added_by_username: it.added_by_username,
+          trip_item_count: Number(it.trip_item_count || 0),
+          trip_consumed_count: Number(it.trip_consumed_count || 0),
+          items: []
+        };
+        order.push(map[id]);
+      }
+      map[id].items.push(it);
+    });
+    order.sort(function (a, b) {
+      var byDate = dateKey(b.trip_date) - dateKey(a.trip_date);
+      if (byDate) return byDate;
+      return dateKey(b.trip_created_at) - dateKey(a.trip_created_at);
+    });
+    return order;
+  }
 
   // ---- Member filter: populated from /v1/users for admins only ----
   if (isAdmin) {
@@ -348,101 +447,190 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
     var from = document.getElementById('log_date_from').value;
     var to = document.getElementById('log_date_to').value;
     var member = document.getElementById('log_filter_member').value;
+    var price = document.getElementById('log_price').value.trim();
+    var priceOp = document.getElementById('log_price_op').value;
     if (q) params.push('q=' + encodeURIComponent(q));
     if (from) params.push('from=' + encodeURIComponent(from));
     if (to) params.push('to=' + encodeURIComponent(to));
     if (member && member !== 'all') params.push('userId=' + encodeURIComponent(member));
+    if (price !== '') {
+      params.push('price=' + encodeURIComponent(price));
+      params.push('priceOp=' + encodeURIComponent(priceOp));
+    }
 
+    flPage = 1;
     return authFetch('v1/food-items?' + params.join('&'))
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        allItems = data.items || [];
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) {
+        if (!r.ok) throw new Error((r.data && r.data.error) || 'load failed');
+        allItems = r.data.items || [];
         // FEATURE_SHOW_CONSUMED_DEFAULT: when the server flag is on, the
-        // status filter defaults to "All items" (applied once, on first load).
+        // status buttons default to Both (applied once, on first load).
         if (!flAppliedDefault) {
           flAppliedDefault = true;
-          if (data.show_consumed_default) {
+          if (r.data.show_consumed_default) {
             flDefaultStatus = 'all';
-            document.getElementById('log_filter_status').value = 'all';
+            flStatus = 'all';
+            syncStatusButtons();
           }
         }
         render();
       })
       .catch(function (err) {
         console.error('load food items failed', err);
-        document.getElementById('log_table_body').innerHTML =
-          '<tr><td colspan="8" class="table-empty">Could not load food items.</td></tr>';
+        document.getElementById('fl_trip_list').innerHTML =
+          '<section class="card trip-card"><p class="table-empty">Could not load food items.</p></section>';
       });
   }
 
-  // ---- Render (status filter applied client-side so the stats stay accurate) ----
-  function render() {
-    var status = document.getElementById('log_filter_status').value;
-
-    var available = allItems.filter(function (it) { return it.status === 'available'; }).length;
-    var consumed = allItems.filter(function (it) { return it.status === 'consumed'; }).length;
-    document.getElementById('fl_stat_total').textContent = allItems.length;
-    document.getElementById('fl_stat_available').textContent = available;
-    document.getElementById('fl_stat_consumed').textContent = consumed;
-
-    var rows = allItems.filter(function (it) {
-      return status === 'all' || it.status === status;
-    });
-
-    document.getElementById('fl_count').textContent = rows.length;
-    document.getElementById('fl_total_count').textContent = allItems.length;
-
-    var tbody = document.getElementById('log_table_body');
-    var empty = document.getElementById('fl_empty');
-    var table = document.getElementById('fl_table');
-
-    if (rows.length === 0) {
-      tbody.innerHTML = '';
-      table.style.display = 'none';
-      empty.classList.add('visible');
-      return;
-    }
-    table.style.display = '';
-    empty.classList.remove('visible');
-
-    tbody.innerHTML = rows.map(function (it) {
+  function itemRows(items) {
+    return items.map(function (it) {
       var addedBy = it.added_by_username || '—';
+      var open = !!openHistory[it.id];
       var consumeBtn = it.status === 'available'
-        ? '<button class="btn btn-secondary btn-sm" onclick="flAskConsume(\'' + esc(it.id) + '\')">' +
+        ? '<button type="button" class="btn btn-secondary btn-sm" data-consume="' + esc(it.id) + '">' +
             '<i class="fa-solid fa-utensils" aria-hidden="true"></i> Consume</button>'
         : '';
       var editBtn = isAdmin
-        ? '<button class="btn btn-ghost btn-sm" onclick="flOpenEditModal(\'' + esc(it.id) + '\')">' +
+        ? '<button type="button" class="btn btn-ghost btn-sm" data-edit="' + esc(it.id) + '">' +
             '<i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>'
+        : '';
+      var events = Array.isArray(it.consumptions) ? it.consumptions : [];
+      var history = events.length
+        ? '<ul>' + events.map(function (ev) {
+            var note = ev.note ? ' — ' + esc(ev.note) : '';
+            var who = ev.consumed_by_username || 'Someone';
+            return '<li><span class="when">' + esc(fmtDate(ev.consumed_at)) + '</span> · ' +
+              esc(Number(ev.quantity)) + ' ' + esc(it.unit) + ' · ' + esc(who) + note + '</li>';
+          }).join('') + '</ul>'
+        : '<p class="history-empty">Nothing has been logged as consumed yet.</p>';
+      var historyRow = open
+        ? '<tr class="history-row"><td colspan="8"><div class="history-panel">' + history + '</div></td></tr>'
         : '';
       return '<tr class="' + (it.status === 'consumed' ? 'row-consumed' : '') + '">' +
         '<td class="item-name"><div class="item-cell">' +
+          '<button type="button" class="history-btn" data-history="' + esc(it.id) + '" aria-expanded="' + (open ? 'true' : 'false') + '" aria-label="Show when this item was consumed">' +
+            '<i class="fa-solid fa-list" aria-hidden="true"></i></button>' +
           '<span class="item-icon"><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i></span>' +
           esc(it.name) + '</div></td>' +
-        '<td class="num">' + esc(Number(it.quantity)) + '</td>' +
+        '<td class="num">' + esc(qtyLabel(it)) + '</td>' +
         '<td>' + esc(it.unit) + '</td>' +
         '<td class="num">' + money(it.price) + '</td>' +
         '<td>' + fmtDate(it.purchase_date) + '</td>' +
         '<td><div class="member-cell"><span class="avatar">' + esc(initialsOf(addedBy)) + '</span>' + esc(addedBy) + '</div></td>' +
         '<td>' + statusPill(it.status) + '</td>' +
         '<td class="actions-cell">' + consumeBtn + editBtn + '</td>' +
-      '</tr>';
+      '</tr>' + historyRow;
     }).join('');
+  }
+
+  function tripCard(trip) {
+    var visible = trip.items.filter(function (it) {
+      return flStatus === 'all' || it.status === flStatus;
+    });
+    var total = trip.trip_item_count;
+    var used = trip.trip_consumed_count;
+    var pct = total === 0 ? 0 : Math.round((used / total) * 100);
+    var meta = (trip.store_name ? esc(trip.store_name) + ' · ' : '') +
+      'Logged by ' + esc(trip.added_by_username || '—');
+    return '<section class="card trip-card">' +
+      '<div class="trip-head">' +
+        '<div><h3>' + esc(fmtDate(trip.trip_date)) + '</h3><div class="trip-meta">' + meta + '</div></div>' +
+        '<div class="trip-progress">' +
+          '<div class="trip-progress-meta"><span>' + used + ' of ' + total + ' items</span><span>' + pct + '%</span></div>' +
+          '<div class="trip-progress-track" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="Trip consumption">' +
+            '<div class="trip-progress-fill" style="width:' + pct + '%"></div></div>' +
+        '</div></div>' +
+      '<table><thead><tr>' +
+        '<th scope="col">Item Name</th><th scope="col" class="num">Quantity</th><th scope="col">Unit</th>' +
+        '<th scope="col" class="num">Price</th><th scope="col">Purchase Date</th><th scope="col">Added By</th>' +
+        '<th scope="col">Status</th><th scope="col" class="actions-cell">Actions</th>' +
+      '</tr></thead><tbody>' + itemRows(visible) + '</tbody></table></section>';
+  }
+
+  // ---- Render (status filter applied client-side so the stats stay accurate) ----
+  function render() {
+    var available = allItems.filter(function (it) { return it.status === 'available'; }).length;
+    var consumed = allItems.filter(function (it) { return it.status === 'consumed'; }).length;
+    document.getElementById('fl_stat_total').textContent = allItems.length;
+    document.getElementById('fl_stat_available').textContent = available;
+    document.getElementById('fl_stat_consumed').textContent = consumed;
+
+    var trips = groupTrips(allItems).filter(function (trip) {
+      return trip.items.some(function (it) { return flStatus === 'all' || it.status === flStatus; });
+    });
+    var pageCount = Math.max(1, Math.ceil(trips.length / PAGE_SIZE));
+    if (flPage > pageCount) flPage = pageCount;
+    if (flPage < 1) flPage = 1;
+    var start = (flPage - 1) * PAGE_SIZE;
+    var pageTrips = trips.slice(start, start + PAGE_SIZE);
+
+    var list = document.getElementById('fl_trip_list');
+    var empty = document.getElementById('fl_empty');
+    var pager = document.getElementById('fl_pager');
+
+    if (trips.length === 0) {
+      list.innerHTML = '';
+      list.style.display = 'none';
+      empty.classList.add('visible');
+      pager.hidden = true;
+      return;
+    }
+    list.style.display = '';
+    empty.classList.remove('visible');
+    list.innerHTML = pageTrips.map(tripCard).join('');
+
+    var end = Math.min(start + PAGE_SIZE, trips.length);
+    document.getElementById('fl_pager_label').textContent = (start + 1) + '–' + end + ' of ' + trips.length;
+    pager.hidden = false;
+    document.getElementById('fl_pager_prev').disabled = flPage <= 1;
+    document.getElementById('fl_pager_next').disabled = flPage >= pageCount;
   }
 
   // ---- Filters ----
   document.getElementById('fl_apply_btn').addEventListener('click', loadItems);
-  document.getElementById('log_filter_status').addEventListener('change', render);
   document.getElementById('log_search').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') loadItems();
   });
+  document.getElementById('log_price').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loadItems();
+  });
+  document.getElementById('fl_pager_prev').addEventListener('click', function () {
+    if (flPage > 1) { flPage -= 1; render(); }
+  });
+  document.getElementById('fl_pager_next').addEventListener('click', function () {
+    flPage += 1;
+    render();
+  });
+  document.getElementById('fl_trip_list').addEventListener('click', function (e) {
+    var historyBtn = e.target.closest('[data-history]');
+    if (historyBtn) {
+      var hid = historyBtn.getAttribute('data-history');
+      openHistory[hid] = !openHistory[hid];
+      render();
+      return;
+    }
+    var consumeBtn = e.target.closest('[data-consume]');
+    if (consumeBtn) { flAskConsume(consumeBtn.getAttribute('data-consume')); return; }
+    var editBtn = e.target.closest('[data-edit]');
+    if (editBtn) flOpenEditModal(editBtn.getAttribute('data-edit'));
+  });
 
+  window.flSetStatus = function (status) {
+    flStatus = status;
+    flPage = 1;
+    syncStatusButtons();
+    render();
+  };
   window.flResetFilters = function () {
     document.getElementById('log_search').value = '';
-    document.getElementById('log_filter_status').value = flDefaultStatus;
     document.getElementById('log_date_from').value = '';
     document.getElementById('log_date_to').value = '';
     document.getElementById('log_filter_member').value = 'all';
+    document.getElementById('log_price').value = '';
+    document.getElementById('log_price_op').value = 'gte';
+    flStatus = flDefaultStatus;
+    syncStatusButtons();
     loadItems();
   };
 
@@ -451,8 +639,14 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
     var item = allItems.find(function (it) { return it.id === id; });
     if (!item) return;
     pendingConsumeId = id;
+    var left = item.quantity_remaining == null ? Number(item.quantity) : Number(item.quantity_remaining);
     document.getElementById('fl_modal_item').textContent = item.name;
+    document.getElementById('fl_consume_remaining').textContent = left + ' ' + item.unit + ' left';
+    document.getElementById('fl_consume_qty').value = '';
+    document.getElementById('fl_consume_qty').max = left;
+    document.getElementById('fl_consume_note').value = '';
     document.getElementById('fl_consume_modal').classList.add('open');
+    document.getElementById('fl_consume_qty').focus();
   };
   window.flCloseConsumeModal = function () {
     pendingConsumeId = null;
@@ -460,28 +654,44 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
   };
   window.flConfirmConsume = function () {
     if (!pendingConsumeId) return;
+    var item = allItems.find(function (it) { return it.id === pendingConsumeId; });
+    var qty = Number(document.getElementById('fl_consume_qty').value);
+    var left = item ? Number(item.quantity_remaining == null ? item.quantity : item.quantity_remaining) : qty;
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast('Enter how much was used.', true);
+      return;
+    }
+    if (qty - left > 0.0001) {
+      toast('That is more than what is left.', true);
+      return;
+    }
     var id = pendingConsumeId;
+    var note = document.getElementById('fl_consume_note').value.trim();
     var btn = document.getElementById('fl_modal_confirm');
     btn.disabled = true;
-    authFetch('v1/food-items/' + encodeURIComponent(id) + '/consume', { method: 'PATCH' })
+    authFetch('v1/food-items/' + encodeURIComponent(id) + '/consume', {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity: qty, note: note })
+    })
       .then(function (res) {
         return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
       })
       .then(function (r) {
         if (r.ok) {
-          toast('Item marked as consumed.');
+          var done = r.data.item && r.data.item.status === 'consumed';
+          toast(done ? 'Item fully used.' : 'Consumption logged.');
         } else if (r.status === 409) {
-          // rule_no_double_consume — already consumed by someone else
           toast(r.data.error || 'This item was already consumed.', true);
         } else {
-          toast(r.data.error || 'Could not mark item as consumed.', true);
+          toast(r.data.error || 'Could not log consumption.', true);
         }
       })
-      .catch(function () { toast('Could not mark item as consumed.', true); })
+      .catch(function () { toast('Could not log consumption.', true); })
       .then(function () {
         btn.disabled = false;
         flCloseConsumeModal();
-        loadItems();
+        var page = flPage;
+        loadItems().then(function () { flPage = page; render(); });
       });
   };
 

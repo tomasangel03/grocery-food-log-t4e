@@ -137,10 +137,16 @@ const cleanup = { userIds: [], tripIds: [] };
     'food log — list includes new items + show_consumed_default flag', `status=${fl.status}`);
 
   // ══ 6. Consume flow ════════════════════════════════════════════════
-  const consume = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, { token: memberToken });
+  const consume = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, {
+    token: memberToken,
+    body: { quantity: Number(itemA.quantity) }
+  });
   report(consume.status === 200 && consume.json?.item?.status === 'consumed',
     'consume — member marks item consumed', `status=${consume.status}`);
-  const dbl = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, { token: memberToken });
+  const dbl = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, {
+    token: memberToken,
+    body: { quantity: 1 }
+  });
   report(dbl.status === 409, 'consume — double consume rejected 409', `status=${dbl.status}`);
 
   // ══ 7. Admin edit modal (PUT) + remove (DELETE) ════════════════════

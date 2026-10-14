@@ -22,11 +22,11 @@ router.get('/dashboard/summary', verifyToken, async (req, res) => {
         LIMIT 10`
     );
 
-    // Available inventory grouped by unit
+    // Available inventory grouped by unit (what is still left, not what was bought)
     const [inventoryByUnit] = await pool.query(
       `SELECT unit,
-              COUNT(*)      AS item_count,
-              SUM(quantity) AS total_quantity
+              COUNT(*)                 AS item_count,
+              SUM(quantity_remaining)  AS total_quantity
          FROM food_items
         WHERE status = 'available'
         GROUP BY unit
@@ -46,6 +46,30 @@ router.get('/dashboard/summary', verifyToken, async (req, res) => {
         WHERE purchase_date >= date_trunc('month', CURRENT_DATE)::date`
     );
 
+    // Item-weighted consumption of the last 5 trips: used items / items bought.
+    const [[consumptionRow]] = await pool.query(
+      `WITH last_trips AS (
+         SELECT id
+           FROM shopping_trips
+          ORDER BY trip_date DESC, created_at DESC
+          LIMIT 5
+       )
+       SELECT COUNT(fi.id)::int AS item_count,
+              COUNT(fi.id) FILTER (WHERE fi.status = 'consumed')::int AS consumed_count,
+              (SELECT COUNT(*)::int FROM last_trips) AS trip_count
+         FROM last_trips lt
+         LEFT JOIN food_items fi ON fi.shopping_trip_id = lt.id`
+    );
+
+    const [[weekRow]] = await pool.query(
+      `SELECT COUNT(*)::int AS consumed_this_week
+         FROM consumption_events
+        WHERE consumed_at >= NOW() - INTERVAL '7 days'`
+    );
+
+    const itemCount = Number(consumptionRow.item_count || 0);
+    const consumedCount = Number(consumptionRow.consumed_count || 0);
+
     return res.json({
       recent_items: recentItems,
       inventory_by_unit: inventoryByUnit.map((r) => ({
@@ -57,7 +81,14 @@ router.get('/dashboard/summary', verifyToken, async (req, res) => {
         total_items: Number(itemsRow.total_items),
         total_spent: Number(spendRow.total_spent),
         trip_count: Number(spendRow.trip_count)
-      }
+      },
+      recent_consumption: {
+        trip_count: Number(consumptionRow.trip_count || 0),
+        item_count: itemCount,
+        consumed_count: consumedCount,
+        percent: itemCount === 0 ? 0 : Math.round((consumedCount / itemCount) * 100)
+      },
+      consumed_this_week: Number(weekRow.consumed_this_week || 0)
     });
   } catch (err) {
     console.error('GET /v1/dashboard/summary error:', err);

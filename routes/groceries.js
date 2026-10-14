@@ -11,6 +11,30 @@ router.use(verifyToken);
 
 const VALID_UNITS = ['kg', 'g', 'L', 'ml', 'pieces', 'pack'];
 
+function toCents(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
+}
+
+function centsToAmount(cents) {
+  return (cents / 100).toFixed(2);
+}
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function isValidDateStr(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
 }
@@ -81,15 +105,16 @@ router.post('/shopping-trips', async (req, res) => {
       const purchaseDate = isValidDateStr(it.purchase_date) ? it.purchase_date : trip_date;
       await conn.query(
         `INSERT INTO food_items
-           (id, shopping_trip_id, name, quantity, unit, price, purchase_date, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'available')`,
-        [itemId, tripId, it.name.trim(), Number(it.quantity), it.unit, Number(it.price), purchaseDate]
+           (id, shopping_trip_id, name, quantity, quantity_remaining, unit, price, purchase_date, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available')`,
+        [itemId, tripId, it.name.trim(), Number(it.quantity), Number(it.quantity), it.unit, Number(it.price), purchaseDate]
       );
       createdItems.push({
         id: itemId,
         shopping_trip_id: tripId,
         name: it.name.trim(),
         quantity: Number(it.quantity),
+        quantity_remaining: Number(it.quantity),
         unit: it.unit,
         price: Number(it.price),
         purchase_date: purchaseDate,
@@ -135,7 +160,8 @@ router.post('/shopping-trips', async (req, res) => {
  * Lists inventory joined with the adder's username.
  * Filters: status (default 'available' per rule_consumed_excluded, unless
  * FEATURE_SHOW_CONSUMED_DEFAULT is enabled → 'all'), from/to purchase-date
- * range, userId (who added), name search (q or name).
+ * range, userId (who added), name search (q or name), and price with
+ * priceOp gte or lte. Each row includes unfiltered trip progress counts.
  */
 router.get('/food-items', async (req, res) => {
   try {
@@ -171,25 +197,66 @@ router.get('/food-items', async (req, res) => {
       where.push('fi.name LIKE ?');
       params.push(`%${search}%`);
     }
+    if (req.query.price != null && String(req.query.price).trim() !== '') {
+      const price = Number(req.query.price);
+      if (!Number.isFinite(price) || price < 0) {
+        return res.status(400).json({ error: 'price must be a non-negative number' });
+      }
+      const priceOp = req.query.priceOp;
+      if (priceOp !== 'gte' && priceOp !== 'lte') {
+        return res.status(400).json({ error: "priceOp must be 'gte' or 'lte'" });
+      }
+      where.push(priceOp === 'gte' ? 'fi.price >= ?' : 'fi.price <= ?');
+      params.push(price);
+    }
 
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const [rows] = await pool.query(
-      `SELECT fi.id, fi.shopping_trip_id, fi.name, fi.quantity, fi.unit, fi.price,
+      `SELECT fi.id, fi.shopping_trip_id, fi.name, fi.quantity, fi.quantity_remaining, fi.unit, fi.price,
               fi.purchase_date, fi.status, fi.consumed_by_user_id, fi.consumed_at,
               fi.note, fi.note_updated_by_user_id, fi.note_updated_at,
-              st.trip_date, st.store_name, st.user_id AS added_by_user_id,
+              st.trip_date, st.created_at AS trip_created_at, st.store_name, st.user_id AS added_by_user_id,
               u.username AS added_by_username,
               cu.username AS consumed_by_username,
-              nu.username AS note_updated_by_username
+              nu.username AS note_updated_by_username,
+              prog.trip_item_count, prog.trip_consumed_count,
+              COALESCE((
+                SELECT json_agg(
+                  json_build_object(
+                    'id', ce.id,
+                    'quantity', ce.quantity,
+                    'note', ce.note,
+                    'consumed_at', ce.consumed_at,
+                    'consumed_by_username', eu.username
+                  )
+                  ORDER BY ce.consumed_at DESC
+                )
+                FROM consumption_events ce
+                LEFT JOIN users eu ON eu.uuid = ce.consumed_by_user_id
+                WHERE ce.food_item_id = fi.id
+              ), '[]'::json) AS consumptions
          FROM food_items fi
          JOIN shopping_trips st ON st.id = fi.shopping_trip_id
          JOIN users u ON u.uuid = st.user_id
          LEFT JOIN users cu ON cu.uuid = fi.consumed_by_user_id
          LEFT JOIN users nu ON nu.uuid = fi.note_updated_by_user_id
+         LEFT JOIN (
+           SELECT shopping_trip_id,
+                  COUNT(*)::int AS trip_item_count,
+                  COUNT(*) FILTER (WHERE status = 'consumed')::int AS trip_consumed_count
+             FROM food_items
+            GROUP BY shopping_trip_id
+         ) prog ON prog.shopping_trip_id = fi.shopping_trip_id
          ${whereSql}
-         ORDER BY fi.purchase_date DESC, fi.created_at DESC`,
+         ORDER BY st.trip_date DESC, st.created_at DESC, fi.created_at DESC`,
       params
     );
+
+    for (const row of rows) {
+      row.consumptions = asArray(row.consumptions);
+      row.trip_item_count = Number(row.trip_item_count || 0);
+      row.trip_consumed_count = Number(row.trip_consumed_count || 0);
+    }
 
     // Expose the flag so the UI can default its status filter to "All items"
     return res.json({ items: rows, show_consumed_default: showConsumedDefault });
@@ -201,17 +268,35 @@ router.get('/food-items', async (req, res) => {
 
 /**
  * PATCH /v1/food-items/:id/consume
- * Marks an item consumed. Rejects with 409 if already consumed
- * (rule_no_double_consume) and writes a consume_item activity entry
- * (evt_activity_on_consume).
+ * Logs a partial amount. Body: { quantity, note? }.
+ * Remaining quantity drops by that amount. Status becomes consumed only when
+ * nothing is left. Rejects with 409 once the item is already used up
+ * (rule_no_double_consume) and writes a consume_item activity entry.
  */
 router.patch('/food-items/:id/consume', async (req, res) => {
+  const body = req.body || {};
+  if (body.quantity == null || body.quantity === '') {
+    return res.status(400).json({ error: 'quantity is required' });
+  }
+  const qtyCents = toCents(body.quantity);
+  if (qtyCents == null || qtyCents <= 0) {
+    return res.status(400).json({ error: 'quantity must be a positive number' });
+  }
+  if (body.note != null && body.note !== '' && typeof body.note !== 'string') {
+    return res.status(400).json({ error: 'note must be a string' });
+  }
+  const trimmedNote = body.note == null ? '' : String(body.note).trim();
+  if (trimmedNote.length > 1000) {
+    return res.status(400).json({ error: 'note must be 1000 characters or fewer' });
+  }
+  const note = trimmedNote.length === 0 ? null : trimmedNote;
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
     const [rows] = await conn.query(
-      'SELECT id, name, status FROM food_items WHERE id = ? FOR UPDATE',
+      'SELECT id, name, unit, status, quantity_remaining FROM food_items WHERE id = ? FOR UPDATE',
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -219,32 +304,76 @@ router.patch('/food-items/:id/consume', async (req, res) => {
       return res.status(404).json({ error: 'Food item not found' });
     }
     const item = rows[0];
-    if (item.status === 'consumed') {
+    const remCents = toCents(item.quantity_remaining);
+    if (item.status === 'consumed' || remCents <= 0) {
       await conn.rollback();
       return res.status(409).json({ error: 'Item is already consumed' });
     }
+    if (qtyCents > remCents) {
+      await conn.rollback();
+      return res.status(400).json({
+        error: `Only ${centsToAmount(remCents)} ${item.unit} left`
+      });
+    }
 
+    const newRemCents = remCents - qtyCents;
+    const fullyUsed = newRemCents === 0;
+    if (fullyUsed) {
+      await conn.query(
+        `UPDATE food_items
+            SET quantity_remaining = 0,
+                status = 'consumed',
+                consumed_by_user_id = ?,
+                consumed_at = NOW()
+          WHERE id = ?`,
+        [req.user.id, item.id]
+      );
+    } else {
+      await conn.query(
+        'UPDATE food_items SET quantity_remaining = ? WHERE id = ?',
+        [centsToAmount(newRemCents), item.id]
+      );
+    }
+
+    const eventId = crypto.randomUUID();
     await conn.query(
-      "UPDATE food_items SET status = 'consumed', consumed_by_user_id = ?, consumed_at = NOW() WHERE id = ?",
-      [req.user.id, item.id]
+      `INSERT INTO consumption_events
+         (id, food_item_id, quantity, note, consumed_by_user_id, consumed_at)
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [eventId, item.id, centsToAmount(qtyCents), note, req.user.id]
     );
 
-    // evt_activity_on_consume
+    const leftLabel = fullyUsed
+      ? 'none left'
+      : `${centsToAmount(newRemCents)} ${item.unit} left`;
+    const noteBit = note ? ` Note: ${note.length > 80 ? `${note.slice(0, 80)}…` : note}` : '';
     await conn.query(
       `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
        VALUES (?, ?, 'consume_item', ?, 'food_item', ?)`,
-      [crypto.randomUUID(), req.user.id, `${req.user.username} consumed "${item.name}"`, item.id]
+      [
+        crypto.randomUUID(),
+        req.user.id,
+        `${req.user.username} consumed ${centsToAmount(qtyCents)} ${item.unit} of "${item.name}" (${leftLabel}).${noteBit}`,
+        item.id
+      ]
     );
 
     await conn.commit();
 
     const [updated] = await pool.query(
-      `SELECT id, shopping_trip_id, name, quantity, unit, price, purchase_date,
+      `SELECT id, shopping_trip_id, name, quantity, quantity_remaining, unit, price, purchase_date,
               status, consumed_by_user_id, consumed_at
          FROM food_items WHERE id = ?`,
       [item.id]
     );
-    return res.json({ item: updated[0] });
+    return res.json({
+      item: updated[0],
+      event: {
+        id: eventId,
+        quantity: Number(centsToAmount(qtyCents)),
+        note
+      }
+    });
   } catch (err) {
     await conn.rollback();
     console.error('PATCH /food-items/:id/consume failed:', err);
@@ -340,6 +469,7 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
   const sets = [];
   const params = [];
   const changes = [];
+  let pendingQty = null;
 
   if (name !== undefined) {
     if (typeof name !== 'string' || name.trim().length === 0) {
@@ -357,6 +487,7 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
     sets.push('quantity = ?');
     params.push(qty);
     changes.push(`quantity → ${qty}`);
+    pendingQty = qty;
   }
   if (price !== undefined) {
     const p = Number(price);
@@ -376,7 +507,7 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
     await conn.beginTransaction();
 
     const [rows] = await conn.query(
-      'SELECT id, name FROM food_items WHERE id = ? FOR UPDATE',
+      'SELECT id, name, status, quantity, quantity_remaining FROM food_items WHERE id = ? FOR UPDATE',
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -384,6 +515,32 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Food item not found' });
     }
     const original = rows[0];
+
+    if (pendingQty != null) {
+      const purchasedCents = toCents(original.quantity);
+      const remainingCents = toCents(original.quantity_remaining);
+      const consumedCents = purchasedCents - remainingCents;
+      const newCents = toCents(pendingQty);
+      if (newCents < consumedCents) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'quantity cannot be less than the amount already consumed' });
+      }
+      const newRemainingCents = newCents - consumedCents;
+      sets.push('quantity_remaining = ?');
+      params.push(centsToAmount(newRemainingCents));
+      if (newRemainingCents === 0) {
+        sets.push("status = 'consumed'");
+        if (original.status !== 'consumed') {
+          sets.push('consumed_by_user_id = ?');
+          params.push(req.user.id);
+          sets.push('consumed_at = NOW()');
+        }
+      } else if (original.status === 'consumed') {
+        sets.push("status = 'available'");
+        sets.push('consumed_by_user_id = NULL');
+        sets.push('consumed_at = NULL');
+      }
+    }
 
     await conn.query(
       `UPDATE food_items SET ${sets.join(', ')} WHERE id = ?`,
@@ -404,7 +561,7 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
     await conn.commit();
 
     const [updated] = await pool.query(
-      `SELECT id, shopping_trip_id, name, quantity, unit, price, purchase_date,
+      `SELECT id, shopping_trip_id, name, quantity, quantity_remaining, unit, price, purchase_date,
               status, consumed_by_user_id, consumed_at
          FROM food_items WHERE id = ?`,
       [original.id]

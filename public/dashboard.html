@@ -39,6 +39,13 @@
 .inv-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--color-border);display:flex;align-items:center;justify-content:space-between;font:500 12.5px var(--font-body);color:var(--color-text-secondary);}
 .inv-foot b{color:var(--color-text);font-weight:600;}
 
+.consumption-card{display:flex;flex-direction:column;gap:14px;}
+.consumption-card .stat-label{font:500 12.5px var(--font-body);color:var(--color-text-secondary);}
+.consumption-card .stat-value{font:700 26px var(--font-head);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+.consumption-card p{font:400 13px var(--font-body);color:var(--color-text-secondary);margin-top:4px;}
+.progress-track{height:8px;border-radius:999px;background:#e8eef2;overflow:hidden;}
+.progress-fill{height:100%;width:0;background:var(--color-primary);border-radius:999px;}
+
 .quick-add-card{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .quick-add-card .qa-text h3{font:600 15px var(--font-head);}
 .quick-add-card .qa-text p{font:400 12.5px var(--font-body);color:var(--color-text-secondary);margin-top:3px;}
@@ -100,6 +107,18 @@
             <div class="stat-label">Spent this month</div>
             <div class="stat-value" id="stat_spent">—</div>
             <span class="pill pill-warning"><span class="dot"></span><span id="stat_spent_sub">0 trips</span></span>
+          </div>
+        </section>
+
+        <!-- ===== Weighted consumption of the last 5 trips ===== -->
+        <section class="card consumption-card" id="dash_consumption" aria-label="Consumption across recent trips">
+          <div>
+            <div class="stat-label">Consumption, last 5 trips</div>
+            <div class="stat-value" id="dash_avg_pct">—</div>
+            <p id="dash_avg_detail">Weighted by how many items each trip had.</p>
+          </div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dash_avg_bar" aria-label="Weighted consumption">
+            <div class="progress-fill" id="dash_avg_fill"></div>
           </div>
         </section>
 
@@ -213,7 +232,20 @@
       // Stats
       var tm = data.this_month || {};
       document.getElementById('stat_total').textContent = tm.total_items != null ? tm.total_items : 0;
+      document.getElementById('stat_consumed').textContent =
+        data.consumed_this_week != null ? data.consumed_this_week : 0;
       document.getElementById('stat_spent').textContent = money(tm.total_spent);
+      var rc = data.recent_consumption || {};
+      var pct = Number(rc.percent || 0);
+      var tripCount = Number(rc.trip_count || 0);
+      var itemCount = Number(rc.item_count || 0);
+      var usedCount = Number(rc.consumed_count || 0);
+      document.getElementById('dash_avg_pct').textContent = pct + '%';
+      document.getElementById('dash_avg_detail').textContent =
+        usedCount + ' of ' + itemCount + ' items used across the last ' +
+        tripCount + ' trip' + (tripCount === 1 ? '' : 's');
+      document.getElementById('dash_avg_fill').style.width = Math.max(0, Math.min(100, pct)) + '%';
+      document.getElementById('dash_avg_bar').setAttribute('aria-valuenow', String(pct));
       document.getElementById('stat_spent_sub').textContent =
         (tm.trip_count || 0) + ' trip' + (tm.trip_count === 1 ? '' : 's');
 
@@ -263,19 +295,6 @@
         '<tr><td colspan="5" class="table-empty">Could not load dashboard data.</td></tr>';
     });
 
-  // ---- Consumed this week (computed from the food-items list) ----
-  authFetch('v1/food-items?status=consumed')
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      var weekAgo = Date.now() - 7 * 86400000;
-      var count = (data.items || []).filter(function (it) {
-        return it.consumed_at && new Date(it.consumed_at).getTime() >= weekAgo;
-      }).length;
-      document.getElementById('stat_consumed').textContent = count;
-    })
-    .catch(function () {
-      document.getElementById('stat_consumed').textContent = '0';
-    });
 })();
 </script>
 </body>

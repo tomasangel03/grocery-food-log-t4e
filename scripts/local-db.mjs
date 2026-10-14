@@ -150,9 +150,13 @@ async function main() {
 
   const db = new pg.Client({ host: '127.0.0.1', port, user, password, database: 'foodlog' });
   await db.connect();
-  const sql = fs.readFileSync(path.join(root, 'migrations', '001_schema.sql'), 'utf8');
-  for (const statement of splitSql(sql)) {
-    await db.query(statement);
+  const migDir = path.join(root, 'migrations');
+  const files = fs.readdirSync(migDir).filter((name) => name.endsWith('.sql')).sort();
+  for (const file of files) {
+    const sql = fs.readFileSync(path.join(migDir, file), 'utf8');
+    for (const statement of splitSql(sql)) {
+      await db.query(statement);
+    }
   }
   await db.end();
 
