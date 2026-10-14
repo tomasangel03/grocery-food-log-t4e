@@ -1,6 +1,6 @@
 // One-shot diagnostic: require each server module and report the first failure.
 'use strict';
-const mods = ['dotenv', 'express', 'mysql2', 'bcrypt', 'jsonwebtoken', 'node-cron', 'uuid', 'google-auth-library'];
+const mods = ['dotenv', 'express', 'pg', 'bcryptjs', 'jsonwebtoken', 'node-cron', 'uuid', 'google-auth-library'];
 for (const m of mods) {
   try {
     require(m);

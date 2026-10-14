@@ -38,12 +38,12 @@ router.get('/dashboard/summary', verifyToken, async (req, res) => {
       `SELECT COALESCE(SUM(total_amount), 0) AS total_spent,
               COUNT(*)                       AS trip_count
          FROM shopping_trips
-        WHERE trip_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`
+        WHERE trip_date >= date_trunc('month', CURRENT_DATE)::date`
     );
     const [[itemsRow]] = await pool.query(
       `SELECT COUNT(*) AS total_items
          FROM food_items
-        WHERE purchase_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`
+        WHERE purchase_date >= date_trunc('month', CURRENT_DATE)::date`
     );
 
     return res.json({

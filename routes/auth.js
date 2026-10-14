@@ -3,7 +3,7 @@
 // flow_self_registration: validate unique email across providers, password strength +
 //   confirmation match, create member (auth_provider='local'), log 'user_registered', issue JWT
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
@@ -164,7 +164,7 @@ router.post('/register', async (req, res) => {
 
     await pool.query(
       `INSERT INTO users (uuid, username, email, password_hash, google_id, auth_provider, role, first_name, last_name, is_active)
-       VALUES (?, ?, ?, ?, NULL, 'local', 'member', ?, ?, 1)`,
+       VALUES (?, ?, ?, ?, NULL, 'local', 'member', ?, ?, TRUE)`,
       [userId, username, emailNorm, passwordHash, String(firstName).trim(), String(lastName).trim()]
     );
 
@@ -195,7 +195,7 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({ token, user: publicUser(user) });
   } catch (err) {
     // Race on unique constraints (username/email)
-    if (err && err.code === 'ER_DUP_ENTRY') {
+    if (err && err.code === '23505') {
       return res.status(409).json({ error: 'An account with this email or username already exists' });
     }
     console.error('POST /v1/auth/register error:', err);
@@ -320,7 +320,7 @@ router.get('/google/callback', async (req, res) => {
 
       await pool.query(
         `INSERT INTO users (uuid, username, email, password_hash, google_id, auth_provider, role, first_name, last_name, is_active)
-         VALUES (?, ?, ?, NULL, ?, 'google', 'member', ?, ?, 1)`,
+         VALUES (?, ?, ?, NULL, ?, 'google', 'member', ?, ?, TRUE)`,
         [userId, username, email, googleId, firstName, lastName]
       );
 

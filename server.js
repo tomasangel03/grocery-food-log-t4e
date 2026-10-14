@@ -63,13 +63,17 @@ app.use((req, res, next) => {
 // job_monthly_stats: monthly spend/item rollup at 02:00 on the 1st
 require('./jobs/monthlyStats').start();
 
-const PORT = process.env.PORT;
-if (!PORT) {
-  console.error('FATAL: PORT environment variable is not set — refusing to start.');
-  process.exit(1);
+// Vercel imports this file and serves the exported app. It already sets PORT
+// and must not have the process call listen() itself.
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT;
+  if (!PORT) {
+    console.error('FATAL: PORT environment variable is not set — refusing to start.');
+    process.exit(1);
+  }
+  app.listen(PORT, () => {
+    console.log(`FoodLog listening on port ${PORT}`);
+  });
 }
-app.listen(PORT, () => {
-  console.log(`Household Grocery Food Log listening on port ${PORT}`);
-});
 
 module.exports = app;

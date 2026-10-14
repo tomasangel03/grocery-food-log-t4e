@@ -41,10 +41,10 @@ async function runMonthlyRollup(now = new Date()) {
   await pool.query(
     `INSERT INTO monthly_stats (id, stat_month, total_spent, trip_count, total_items, generated_at)
      VALUES (?, ?, ?, ?, ?, NOW())
-     ON DUPLICATE KEY UPDATE
-       total_spent = VALUES(total_spent),
-       trip_count = VALUES(trip_count),
-       total_items = VALUES(total_items),
+     ON CONFLICT (stat_month) DO UPDATE SET
+       total_spent = EXCLUDED.total_spent,
+       trip_count = EXCLUDED.trip_count,
+       total_items = EXCLUDED.total_items,
        generated_at = NOW()`,
     [randomUUID(), monthKey, Number(spend.total_spent), Number(spend.trip_count), Number(items.total_items)]
   );

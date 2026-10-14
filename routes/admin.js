@@ -5,7 +5,7 @@
 //   PATCH /v1/users/:id     — role change / is_active toggle; rejects self-deactivation (rule_no_self_deactivate);
 //                             writes 'update_role' / 'deactivate_user' activity rows
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { randomUUID } = require('crypto');
 const pool = require('../db');
 const { verifyToken, requireAdmin } = require('../middleware/auth');
@@ -171,7 +171,7 @@ router.post('/users', async (req, res) => {
 
     await pool.query(
       `INSERT INTO users (uuid, username, email, password_hash, google_id, auth_provider, role, first_name, last_name, is_active)
-       VALUES (?, ?, ?, ?, NULL, 'local', ?, ?, ?, 1)`,
+       VALUES (?, ?, ?, ?, NULL, 'local', ?, ?, ?, TRUE)`,
       [userId, usernameNorm, emailNorm, passwordHash, roleNorm, String(firstName).trim(), String(lastName).trim()]
     );
 
@@ -196,7 +196,7 @@ router.post('/users', async (req, res) => {
       })
     });
   } catch (err) {
-    if (err && err.code === 'ER_DUP_ENTRY') {
+    if (err && err.code === '23505') {
       return res.status(409).json({ error: 'An account with this email or username already exists' });
     }
     console.error('POST /v1/users error:', err);
@@ -253,7 +253,7 @@ router.patch('/users/:id', async (req, res) => {
     }
     if (isActive !== undefined && Boolean(target.is_active) !== isActive) {
       sets.push('is_active = ?');
-      params.push(isActive ? 1 : 0);
+      params.push(isActive);
       activities.push({
         type: 'deactivate_user',
         desc: isActive

@@ -2,23 +2,15 @@
 // Idempotent: skips insertion if the username already exists.
 'use strict';
 
-const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const pool = require('../db');
 
 const DEFAULT_PASSWORD = 'ChangeMe123!';
 
 async function main() {
-  const conn = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME || process.env.DB_DATABASE
-  });
-
   try {
-    const [rows] = await conn.execute(
+    const [rows] = await pool.query(
       'SELECT uuid FROM users WHERE username = ? LIMIT 1',
       ['tomas']
     );
@@ -31,16 +23,16 @@ async function main() {
     const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
     const uuid = uuidv4();
 
-    await conn.execute(
+    await pool.query(
       `INSERT INTO users
          (uuid, username, email, password_hash, auth_provider, role, first_name, last_name, is_active)
-       VALUES (?, ?, ?, ?, 'local', 'admin', ?, ?, 1)`,
+       VALUES (?, ?, ?, ?, 'local', 'admin', ?, ?, TRUE)`,
       [uuid, 'tomas', 'tomas@example.com', passwordHash, 'Tomas', 'Angel']
     );
 
     console.log('Seed complete: admin user "tomas" created (uuid=' + uuid + ').');
   } finally {
-    await conn.end();
+    await pool.end();
   }
 }
 

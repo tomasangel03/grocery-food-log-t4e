@@ -1,4 +1,4 @@
-/* ===== PantryLog — global design tokens + auth pages ===== */
+/* ===== FoodLog — global design tokens + auth pages ===== */
 :root{
   --color-primary:#0f766e;
   --color-secondary:#115e59;
@@ -36,7 +36,7 @@ input[type="text"]:focus,input[type="email"]:focus,input[type="password"]:focus{
 }
 input::placeholder{color:var(--color-text-muted);}
 
-/* ===== Login / Register shell — PantryLog ===== */
+/* ===== Login / Register shell — FoodLog ===== */
 .login-shell{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--color-background);padding:32px 20px;}
 
 .login-card{width:100%;max-width:400px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg,12px);box-shadow:0 1px 2px rgba(16,24,40,0.05),0 1px 3px rgba(16,24,40,0.06);padding:36px 32px 28px;}
