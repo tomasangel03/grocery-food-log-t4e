@@ -76,5 +76,17 @@ The relational database handles users, permissions, grocery shopping trips, and 
 ## 🚀 Future Roadmap / Iterations
 
 * **Barcode Scanner Integration**: Scan items via mobile camera to automatically retrieve name, size, and reusable IDs, or register new database entries seamlessly.
-* **Multi-Household Support (Family Codes)**: Enable distinct households to share access via custom family join codes managed by a household admin.
+* **About Page**: A public page that explains what this project is, why it was created, and who is the sole owner of the project.
+* **Registration & Households**:
+  * After a person registers and exists in the database, they can create a household or join one with a household code.
+  * Access is limited to households the person created (as household admin) or households they have been added to.
+  * On creation, the household admin sets the join code, or the app assigns a random code.
+  * The creator is a **household admin** for that grocery household. That role is separate from a **platform admin**.
+  * A household admin can invite people as members and later upgrade a member to household admin.
+  * A person can belong to at most **3 households**. That cap applies both to households they create and households they join.
 * **Analytics & Insights Dashboard**: Advanced data visualization module for deeper consumption pattern analysis.
+* **Feedback Logs**: A page or pop-up where users leave feedback on the tool.
+  * Each entry records the page that needs the change and the name of the person giving the feedback.
+  * Feedback is split into good comments and constructive feedback.
+  * Entries are saved into a working document so they can be implemented later.
+  * Once those changes are implemented, they move to a "done" document. Further feedback starts on a new slate.
