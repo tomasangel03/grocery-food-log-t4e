@@ -8,7 +8,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { randomUUID } = require('crypto');
 const pool = require('../db');
-const { verifyToken, requireAdmin } = require('../middleware/auth');
+const { verifyToken, requireSystemAdmin } = require('../middleware/auth');
+const { requireHousehold, requireHouseholdStaff } = require('../middleware/household');
 
 const router = express.Router();
 
@@ -25,8 +26,7 @@ const VALID_ACTION_TYPES = [
   'edit_note'
 ];
 
-// Every route in this router is admin-only
-router.use(verifyToken, requireAdmin);
+router.use(verifyToken);
 
 /** Write an immutable activity row (rule: Activity Log Entries Are Immutable — insert only). */
 async function logActivity(userId, actionType, description, entityType, entityId) {
@@ -57,14 +57,14 @@ function publicUser(u) {
  * Query params: userId (uuid), actionType (enum), limit (<=200), offset
  * Newest first. Members are rejected with 403 by requireAdmin above.
  */
-router.get('/activity-log', async (req, res) => {
+router.get('/activity-log', requireHousehold, requireHouseholdStaff, async (req, res) => {
   try {
     const { userId, actionType } = req.query || {};
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 200);
     const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
-    const where = [];
-    const params = [];
+    const where = ['al.household_id = ?'];
+    const params = [req.household.id];
     if (userId) {
       where.push('al.user_id = ?');
       params.push(String(userId));
@@ -101,7 +101,7 @@ router.get('/activity-log', async (req, res) => {
 /**
  * GET /v1/users — household members table (name, username, email, role, auth provider, status)
  */
-router.get('/users', async (req, res) => {
+router.get('/users', requireSystemAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT uuid, username, email, first_name, last_name, role, auth_provider, is_active, created_at
@@ -120,7 +120,7 @@ router.get('/users', async (req, res) => {
  * first name, last name, username, email, initial password, role).
  * Writes an 'add_user' activity row per evt_activity_on_user_mgmt.
  */
-router.post('/users', async (req, res) => {
+router.post('/users', requireSystemAdmin, async (req, res) => {
   try {
     const {
       first_name: firstName,
@@ -209,7 +209,7 @@ router.post('/users', async (req, res) => {
  * rule_no_self_deactivate: an admin cannot deactivate their own account.
  * Writes 'update_role' / 'deactivate_user' activity rows.
  */
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/:id', requireSystemAdmin, async (req, res) => {
   try {
     const targetId = String(req.params.id);
     const { role, is_active: isActive } = req.body || {};

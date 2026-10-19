@@ -6,51 +6,61 @@
 const express = require('express');
 const pool = require('../db');
 const { verifyToken } = require('../middleware/auth');
+const { requireHousehold } = require('../middleware/household');
 
 const router = express.Router();
 
-router.get('/dashboard/summary', verifyToken, async (req, res) => {
+router.get('/dashboard/summary', verifyToken, requireHousehold, async (req, res) => {
   try {
-    // Recent 10 food items with their trip context
+    const householdId = req.household.id;
+
     const [recentItems] = await pool.query(
       `SELECT fi.id, fi.name, fi.quantity, fi.unit, fi.price, fi.purchase_date,
               fi.status, fi.consumed_at, fi.created_at,
               st.store_name, st.trip_date
          FROM food_items fi
          JOIN shopping_trips st ON st.id = fi.shopping_trip_id
+        WHERE st.household_id = ?
         ORDER BY fi.created_at DESC, fi.id DESC
-        LIMIT 10`
+        LIMIT 10`,
+      [householdId]
     );
 
-    // Available inventory grouped by unit (what is still left, not what was bought)
     const [inventoryByUnit] = await pool.query(
-      `SELECT unit,
+      `SELECT fi.unit,
               COUNT(*)                 AS item_count,
-              SUM(quantity_remaining)  AS total_quantity
-         FROM food_items
-        WHERE status = 'available'
-        GROUP BY unit
-        ORDER BY unit`
+              SUM(fi.quantity_remaining) AS total_quantity
+         FROM food_items fi
+         JOIN shopping_trips st ON st.id = fi.shopping_trip_id
+        WHERE fi.status = 'available'
+          AND st.household_id = ?
+        GROUP BY fi.unit
+        ORDER BY fi.unit`,
+      [householdId]
     );
 
-    // This month's totals (calendar month, from the 1st)
     const [[spendRow]] = await pool.query(
       `SELECT COALESCE(SUM(total_amount), 0) AS total_spent,
               COUNT(*)                       AS trip_count
          FROM shopping_trips
-        WHERE trip_date >= date_trunc('month', CURRENT_DATE)::date`
+        WHERE household_id = ?
+          AND trip_date >= date_trunc('month', CURRENT_DATE)::date`,
+      [householdId]
     );
     const [[itemsRow]] = await pool.query(
       `SELECT COUNT(*) AS total_items
-         FROM food_items
-        WHERE purchase_date >= date_trunc('month', CURRENT_DATE)::date`
+         FROM food_items fi
+         JOIN shopping_trips st ON st.id = fi.shopping_trip_id
+        WHERE st.household_id = ?
+          AND fi.purchase_date >= date_trunc('month', CURRENT_DATE)::date`,
+      [householdId]
     );
 
-    // Item-weighted consumption of the last 5 trips: used items / items bought.
     const [[consumptionRow]] = await pool.query(
       `WITH last_trips AS (
          SELECT id
            FROM shopping_trips
+          WHERE household_id = ?
           ORDER BY trip_date DESC, created_at DESC
           LIMIT 5
        )
@@ -58,13 +68,18 @@ router.get('/dashboard/summary', verifyToken, async (req, res) => {
               COUNT(fi.id) FILTER (WHERE fi.status = 'consumed')::int AS consumed_count,
               (SELECT COUNT(*)::int FROM last_trips) AS trip_count
          FROM last_trips lt
-         LEFT JOIN food_items fi ON fi.shopping_trip_id = lt.id`
+         LEFT JOIN food_items fi ON fi.shopping_trip_id = lt.id`,
+      [householdId]
     );
 
     const [[weekRow]] = await pool.query(
       `SELECT COUNT(*)::int AS consumed_this_week
-         FROM consumption_events
-        WHERE consumed_at >= NOW() - INTERVAL '7 days'`
+         FROM consumption_events ce
+         JOIN food_items fi ON fi.id = ce.food_item_id
+         JOIN shopping_trips st ON st.id = fi.shopping_trip_id
+        WHERE st.household_id = ?
+          AND ce.consumed_at >= NOW() - INTERVAL '7 days'`,
+      [householdId]
     );
 
     const itemCount = Number(consumptionRow.item_count || 0);

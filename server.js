@@ -31,6 +31,9 @@ app.get('/health', async (req, res) => {
 // Auth routes (login + self-registration + Google OAuth)
 app.use('/v1/auth', require('./routes/auth'));
 
+// Households: create, join, membership (JWT-protected)
+app.use('/v1', require('./routes/households'));
+
 // Grocery/inventory routes: shopping trips + food items (JWT-protected)
 app.use('/v1', require('./routes/groceries'));
 

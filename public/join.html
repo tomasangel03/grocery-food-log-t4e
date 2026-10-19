@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join a household — FoodLog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/households.css">
+</head>
+<body>
+<div class="login-shell">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </div>
+      <div class="logo-name">FoodLog</div>
+    </div>
+    <div id="preview_flag" class="preview-flag" hidden>Design preview — nothing is saved</div>
+    <div class="login-header">
+      <h1>You are invited</h1>
+      <p id="join_lead">Enter the household code to see the name before you join.</p>
+    </div>
+    <div class="login-error" id="join_error" role="alert" hidden><span id="join_error_text"></span></div>
+    <div id="signed_out" hidden>
+      <p class="hh-note">Create an account or sign in, then you will come back to this invite.</p>
+      <div class="stack-actions">
+        <a class="btn btn-primary" id="go_register" href="register.html">Create account</a>
+        <a class="btn btn-secondary" id="go_login" href="login.html">Sign in</a>
+      </div>
+    </div>
+    <form class="login-form" id="join_form">
+      <div class="field">
+        <label for="join_code">8-character code</label>
+        <input id="join_code" type="text" maxlength="8" autocapitalize="characters" required>
+      </div>
+      <button class="btn btn-primary" type="submit">Look up household</button>
+    </form>
+    <div id="step_confirm" hidden>
+      <p class="hh-note">Join <b id="confirm_name"></b> as a member?</p>
+      <div class="stack-actions">
+        <button class="btn btn-primary" type="button" id="confirm_join">Join household</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/household-preview.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var code = (params.get('code') || '').trim().toUpperCase();
+  var preview = HouseholdsClient.isPreview();
+  var signedIn = preview || !!localStorage.getItem('hgfl_token');
+  var pending = null;
+  if (preview) document.getElementById('preview_flag').hidden = false;
+  if (code) {
+    sessionStorage.setItem('hgfl_join_code', code);
+    document.getElementById('join_code').value = code;
+  }
+  if (!signedIn) {
+    document.getElementById('signed_out').hidden = false;
+    document.getElementById('join_form').hidden = true;
+    var next = 'join.html' + (code ? ('?code=' + encodeURIComponent(code)) : '');
+    document.getElementById('go_register').href = 'register.html?next=' + encodeURIComponent(next);
+    document.getElementById('go_login').href = 'login.html?next=' + encodeURIComponent(next);
+    return;
+  }
+
+  var errorBox = document.getElementById('join_error');
+  var errorText = document.getElementById('join_error_text');
+  function showError(msg) { errorText.textContent = msg; errorBox.hidden = false; }
+
+  function lookup(value) {
+    HouseholdsClient.lookup(value).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'No household uses that code'); return; }
+      pending = { code: value, name: result.data.household.name };
+      document.getElementById('confirm_name').textContent = pending.name;
+      document.getElementById('join_form').hidden = true;
+      document.getElementById('step_confirm').hidden = false;
+    }).catch(function () { showError('Could not reach the server.'); });
+  }
+
+  document.getElementById('join_form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorBox.hidden = true;
+    lookup(document.getElementById('join_code').value.trim().toUpperCase());
+  });
+  document.getElementById('confirm_join').addEventListener('click', function () {
+    if (!pending) return;
+    HouseholdsClient.join(pending.code).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not join'); return; }
+      HouseholdsClient.setActive(result.data.household.id);
+      sessionStorage.removeItem('hgfl_join_code');
+      window.location.href = 'dashboard.html';
+    });
+  });
+  if (code) lookup(code);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Household preview — FoodLog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/households.css">
+</head>
+<body>
+<div class="preview-shell">
+  <div class="preview-wrap">
+    <div class="preview-flag">Design preview — nothing is saved</div>
+    <div class="login-card wide-card" style="max-width:720px">
+      <div class="login-brand">
+        <div class="logo-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <div class="logo-name">FoodLog</div>
+      </div>
+      <div class="login-header">
+        <h1>Registration and households</h1>
+        <p>Walk through a first visit, or open the app as someone who already belongs to a household. This preview stays in the browser.</p>
+      </div>
+      <button class="btn btn-primary" id="start_new" type="button" style="width:100%">I just registered</button>
+      <div class="login-divider" role="separator"><span>or review a role</span></div>
+      <div class="choice-grid">
+        <button class="choice-card" type="button" data-persona="admin">
+          <h2>Household admin</h2>
+          <p>Jordan runs Home and also belongs to Parents. Appoint a co-admin, share the code, rename.</p>
+        </button>
+        <button class="choice-card" type="button" data-persona="coadmin">
+          <h2>Co-admin</h2>
+          <p>Sam can invite and remove members of Home, and can open the activity log. Sam cannot change the admin.</p>
+        </button>
+        <button class="choice-card" type="button" data-persona="full">
+          <h2>Member at the cap</h2>
+          <p>Riley is in 3 households. Adding another is blocked until they leave one.</p>
+        </button>
+        <button class="choice-card" type="button" data-persona="system">
+          <h2>System admin</h2>
+          <p>Tomas belongs to one household and can open every household in the switcher.</p>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/household-preview.js"></script>
+<script>
+(function () {
+  document.getElementById('start_new').addEventListener('click', function () {
+    HouseholdsClient.start('new');
+    window.location.href = 'onboarding.html';
+  });
+  document.querySelectorAll('[data-persona]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      HouseholdsClient.start(btn.getAttribute('data-persona'));
+      window.location.href = 'households.html';
+    });
+  });
+})();
+</script>
+</body>
+</html>

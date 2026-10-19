@@ -8,10 +8,11 @@ const pool = require('../db');
 const PORT = process.argv[2] || process.env.SMOKE_PORT || 45059;
 const BASE = `http://127.0.0.1:${PORT}`;
 
-async function req(method, path, { token, body, raw } = {}) {
+async function req(method, path, { token, body, raw, householdId } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (householdId) headers['X-Household-Id'] = householdId;
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
@@ -64,10 +65,18 @@ const cleanup = { userIds: [], tripIds: [] };
   );
   ok(regLog.length === 1, '(2) user_registered activity row written (DB verified)');
 
+  const homes = await req('GET', '/v1/households', { token: adminToken });
+  const householdId = homes.json.memberships[0].id;
+  const joinCode = String(homes.json.memberships[0].join_code).trim();
+  ok(joinCode.length === 8, '(2b) household code is 8 characters');
+  const joined = await req('POST', '/v1/households/join', { token: memberToken, body: { code: joinCode } });
+  ok(joined.status === 201, '(2b) member joins the household', JSON.stringify(joined.json));
+
   // ── (3) shopping trip with 2 items ──────────────────────────────
   const today = new Date().toISOString().slice(0, 10);
   const trip = await req('POST', '/v1/shopping-trips', {
     token: adminToken,
+    householdId,
     body: {
       trip_date: today,
       store_name: 'Smoke Mart',
@@ -91,7 +100,7 @@ const cleanup = { userIds: [], tripIds: [] };
   ok(tripLog.length === 1, '(3) add_shopping activity row written (DB verified)');
 
   // ── (4) GET /v1/food-items defaults to available ────────────────
-  const list = await req('GET', '/v1/food-items', { token: adminToken });
+  const list = await req('GET', '/v1/food-items', { token: adminToken, householdId });
   ok(list.status === 200, '(4) food-items list returns 200');
   ok(list.json.items.length > 0 && list.json.items.every(i => i.status === 'available'),
     '(4) default listing contains only available items');
@@ -102,6 +111,7 @@ const cleanup = { userIds: [], tripIds: [] };
   const targetItem = smokeItems[0];
   const consume1 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: Number(targetItem.quantity) }
   });
   ok(consume1.status === 200, '(5) first consume returns 200', JSON.stringify(consume1.json));
@@ -110,20 +120,22 @@ const cleanup = { userIds: [], tripIds: [] };
   ok(!!consume1.json.item.consumed_at, '(5) consumed_at recorded');
   const consume2 = await req('PATCH', `/v1/food-items/${targetItem.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 1 }
   });
   ok(consume2.status === 409, '(5) second consume returns 409', `got ${consume2.status}`);
 
   // ── (6) activity log admin-only ─────────────────────────────────
-  const alMember = await req('GET', '/v1/activity-log', { token: memberToken });
+  const alMember = await req('GET', '/v1/activity-log', { token: memberToken, householdId });
   ok(alMember.status === 403, '(6) member hitting activity-log gets 403', `got ${alMember.status}`);
-  const alAdmin = await req('GET', '/v1/activity-log', { token: adminToken });
+  const alAdmin = await req('GET', '/v1/activity-log', { token: adminToken, householdId });
   ok(alAdmin.status === 200 && Array.isArray(alAdmin.json.entries) && alAdmin.json.entries.length > 0,
     '(6) admin gets activity-log entries');
 
   // ── (7) role upgrade + self-deactivation rejection ──────────────
   const upgrade = await req('PATCH', `/v1/users/${memberId}`, {
-    token: adminToken, body: { role: 'admin' }
+    token: adminToken,
+    householdId, body: { role: 'admin' }
   });
   ok(upgrade.status === 200 && upgrade.json.user.role === 'admin',
     '(7) member upgraded to admin', JSON.stringify(upgrade.json));
@@ -133,7 +145,8 @@ const cleanup = { userIds: [], tripIds: [] };
   );
   ok(roleLog.length === 1, '(7) update_role activity row written (DB verified)');
   const selfDeact = await req('PATCH', `/v1/users/${adminId}`, {
-    token: adminToken, body: { is_active: false }
+    token: adminToken,
+    householdId, body: { is_active: false }
   });
   ok(selfDeact.status >= 400 && selfDeact.status < 500,
     '(7) admin self-deactivation rejected', `got ${selfDeact.status}: ${JSON.stringify(selfDeact.json)}`);
@@ -141,7 +154,7 @@ const cleanup = { userIds: [], tripIds: [] };
   ok(Number(adminRow.is_active) === 1, '(7) admin remains active after rejected self-deactivation');
 
   // ── (8) dashboard summary ───────────────────────────────────────
-  const dash = await req('GET', '/v1/dashboard/summary', { token: adminToken });
+  const dash = await req('GET', '/v1/dashboard/summary', { token: adminToken, householdId });
   ok(dash.status === 200, '(8) dashboard summary returns 200');
   ok(Array.isArray(dash.json.recent_items) && dash.json.recent_items.length > 0,
     '(8) summary includes recent items');
@@ -169,6 +182,7 @@ const cleanup = { userIds: [], tripIds: [] };
   }
   for (const uid of cleanup.userIds) {
     await pool.query('DELETE FROM activity_logs WHERE user_id = ? OR entity_id = ?', [uid, uid]);
+    await pool.query('DELETE FROM household_members WHERE user_id = ?', [uid]);
     await pool.query('DELETE FROM users WHERE uuid = ?', [uid]);
   }
 

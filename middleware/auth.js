@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'hgfl-dev-jwt-secret-change-me';
 
 /**
- * verifyToken — validates the Bearer JWT and attaches { id, role, username } to req.user.
+ * verifyToken — validates the Bearer JWT and attaches { id, role, platformRole, username } to req.user.
  * Responds 401 when the token is missing, malformed, or invalid/expired.
  */
 function verifyToken(req, res, next) {
@@ -21,6 +21,7 @@ function verifyToken(req, res, next) {
     req.user = {
       id: payload.id,
       role: payload.role,
+      platformRole: payload.platform_role || (payload.role === 'admin' ? 'system_admin' : 'user'),
       username: payload.username
     };
     return next();
@@ -39,4 +40,12 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
-module.exports = { verifyToken, requireAdmin };
+/** Platform-wide access. Household admin does not satisfy this. */
+function requireSystemAdmin(req, res, next) {
+  if (!req.user || req.user.platformRole !== 'system_admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  return next();
+}
+
+module.exports = { verifyToken, requireAdmin, requireSystemAdmin };

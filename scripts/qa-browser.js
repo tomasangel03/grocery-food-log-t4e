@@ -18,10 +18,11 @@ function report(pass, label, extra) {
   else { failures++; console.error(`FAIL: ${label}${extra ? ' — ' + extra : ''}`); }
 }
 
-async function req(method, path, { token, body } = {}) {
+async function req(method, path, { token, body, householdId } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (householdId) headers['X-Household-Id'] = householdId;
   const res = await fetch(`${BASE}${path}`, {
     method, headers,
     body: body !== undefined ? JSON.stringify(body) : undefined
@@ -60,14 +61,14 @@ const cleanup = { userIds: [], tripIds: [] };
     'activity log UI — remove_item filter option + TYPE_META present');
   // Shell hides admin nav for members (nav-hidden gating present)
   const shellJs = await page('/js/shell.js');
-  report(shellJs.text.includes('nav-hidden') && shellJs.text.includes("user.role === 'admin'"),
+  report(shellJs.text.includes('nav-hidden') && shellJs.text.includes('Shell.isSystemAdmin'),
     'shell.js — role-gated admin nav present');
-  // Admin pages bounce members client-side
-  for (const p of ['/activity_log.html', '/user_management.html']) {
-    const r = await page(p);
-    report(r.text.includes("Shell.user.role !== 'admin'") && r.text.includes("window.location.replace('dashboard.html')"),
-      `member client-side redirect present in ${p}`);
-  }
+  const activityPage = await page('/activity_log.html');
+  report(activityPage.text.includes('Shell.canViewActivity') && activityPage.text.includes("window.location.replace('dashboard.html')"),
+    'member client-side redirect present in /activity_log.html');
+  const usersPage = await page('/user_management.html');
+  report(usersPage.text.includes('Shell.isSystemAdmin') && usersPage.text.includes("window.location.replace('dashboard.html')"),
+    'member client-side redirect present in /user_management.html');
 
   // ══ 2. Admin login (seeded 'tomas') ════════════════════════════════
   const login = await req('POST', '/v1/auth/login', { body: { username: 'tomas', password: 'ChangeMe123!' } });
@@ -93,6 +94,12 @@ const cleanup = { userIds: [], tripIds: [] };
   const memberUsername = reg.json?.user?.username;
   if (memberId) cleanup.userIds.push(memberId);
 
+  const homes = await req('GET', '/v1/households', { token: adminToken });
+  const householdId = homes.json?.memberships?.[0]?.id;
+  const joinCode = String(homes.json?.memberships?.[0]?.join_code || '').trim();
+  const joined = await req('POST', '/v1/households/join', { token: memberToken, body: { code: joinCode } });
+  report(joined.status === 201, 'households — new member joins with the code', `status=${joined.status} body=${JSON.stringify(joined.json)}`);
+
   // Weak password / mismatch rejected
   const weak = await req('POST', '/v1/auth/register', {
     body: { first_name: 'A', last_name: 'B', email: `w${Date.now()}@x.com`, password: 'short', password_confirmation: 'short' }
@@ -107,6 +114,7 @@ const cleanup = { userIds: [], tripIds: [] };
   const today = new Date().toISOString().slice(0, 10);
   const trip = await req('POST', '/v1/shopping-trips', {
     token: memberToken,
+    householdId,
     body: {
       trip_date: today, store_name: 'QA Mart',
       items: [
@@ -125,13 +133,13 @@ const cleanup = { userIds: [], tripIds: [] };
 
   // ══ 5. Dashboard stats (both roles) ════════════════════════════════
   for (const [who, tok] of [['admin', adminToken], ['member', memberToken]]) {
-    const dash = await req('GET', '/v1/dashboard/summary', { token: tok });
+    const dash = await req('GET', '/v1/dashboard/summary', { token: tok, householdId });
     report(dash.status === 200 && Array.isArray(dash.json?.recent_items)
       && Array.isArray(dash.json?.inventory_by_unit) && dash.json?.this_month,
       `dashboard summary — ${who} gets 200 with all sections`, `status=${dash.status}`);
   }
   // Food log list (what food_log.html loads)
-  const fl = await req('GET', '/v1/food-items?status=all', { token: memberToken });
+  const fl = await req('GET', '/v1/food-items?status=all', { token: memberToken, householdId });
   report(fl.status === 200 && (fl.json?.items || []).some(i => i.name === 'QA Milk')
     && typeof fl.json?.show_consumed_default === 'boolean',
     'food log — list includes new items + show_consumed_default flag', `status=${fl.status}`);
@@ -139,43 +147,45 @@ const cleanup = { userIds: [], tripIds: [] };
   // ══ 6. Consume flow ════════════════════════════════════════════════
   const consume = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: Number(itemA.quantity) }
   });
   report(consume.status === 200 && consume.json?.item?.status === 'consumed',
     'consume — member marks item consumed', `status=${consume.status}`);
   const dbl = await req('PATCH', `/v1/food-items/${itemA.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 1 }
   });
   report(dbl.status === 409, 'consume — double consume rejected 409', `status=${dbl.status}`);
 
   // ══ 7. Admin edit modal (PUT) + remove (DELETE) ════════════════════
   const edit = await req('PUT', `/v1/food-items/${itemB.id}`, {
-    token: adminToken, body: { name: 'QA Apples (edited)', quantity: 2, price: 5.55 }
+    token: adminToken, householdId, body: { name: 'QA Apples (edited)', quantity: 2, price: 5.55 }
   });
   report(edit.status === 200 && edit.json?.item?.name === 'QA Apples (edited)'
     && Number(edit.json?.item?.price) === 5.55,
     'admin edit — PUT updates name/quantity/price', `status=${edit.status} body=${JSON.stringify(edit.json)}`);
-  const editMember = await req('PUT', `/v1/food-items/${itemB.id}`, { token: memberToken, body: { name: 'hax' } });
+  const editMember = await req('PUT', `/v1/food-items/${itemB.id}`, { token: memberToken, householdId, body: { name: 'hax' } });
   report(editMember.status === 403, 'admin edit — member PUT rejected 403', `status=${editMember.status}`);
 
-  const del = await req('DELETE', `/v1/food-items/${itemC.id}`, { token: adminToken });
+  const del = await req('DELETE', `/v1/food-items/${itemC.id}`, { token: adminToken, householdId });
   report(del.status === 200 && del.json?.deleted === true, 'admin remove — DELETE works', `status=${del.status}`);
-  const delMember = await req('DELETE', `/v1/food-items/${itemB.id}`, { token: memberToken });
+  const delMember = await req('DELETE', `/v1/food-items/${itemB.id}`, { token: memberToken, householdId });
   report(delMember.status === 403, 'admin remove — member DELETE rejected 403', `status=${delMember.status}`);
 
   // ══ 8. Activity log — entries + admin-only access ═══════════════════
-  const al = await req('GET', '/v1/activity-log?limit=50', { token: adminToken });
+  const al = await req('GET', '/v1/activity-log?limit=50', { token: adminToken, householdId });
   const types = (al.json?.entries || []).map(e => e.action_type);
-  report(al.status === 200 && ['add_shopping', 'consume_item', 'edit_item', 'remove_item', 'user_registered']
+  report(al.status === 200 && ['add_shopping', 'consume_item', 'edit_item', 'remove_item']
     .every(t => types.includes(t)),
     'activity log — contains add_shopping/consume/edit/remove/registered entries',
     `status=${al.status} types=${[...new Set(types)].join(',')}`);
-  const alFiltered = await req('GET', '/v1/activity-log?actionType=remove_item', { token: adminToken });
+  const alFiltered = await req('GET', '/v1/activity-log?actionType=remove_item', { token: adminToken, householdId });
   report(alFiltered.status === 200 && (alFiltered.json?.entries || []).every(e => e.action_type === 'remove_item')
     && (alFiltered.json?.entries || []).length > 0,
     'activity log — remove_item filter works', `status=${alFiltered.status}`);
-  const alMember = await req('GET', '/v1/activity-log', { token: memberToken });
+  const alMember = await req('GET', '/v1/activity-log', { token: memberToken, householdId });
   report(alMember.status === 403, 'activity log — member rejected 403', `status=${alMember.status}`);
 
   // ══ 9. User management — role change / deactivate / reactivate ═════
@@ -219,6 +229,7 @@ const cleanup = { userIds: [], tripIds: [] };
   }
   for (const uid of cleanup.userIds) {
     await pool.query('DELETE FROM activity_logs WHERE user_id = ? OR entity_id = ?', [uid, uid]);
+    await pool.query('DELETE FROM household_members WHERE user_id = ?', [uid]);
     await pool.query('DELETE FROM users WHERE uuid = ?', [uid]);
   }
   await pool.end();

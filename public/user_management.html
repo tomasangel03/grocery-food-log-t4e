@@ -295,14 +295,14 @@ tr.row-inactive .avatar{opacity:.6}
   <span id="um_toast_msg"></span>
 </div>
 
+<script src="js/household-preview.js"></script>
 <script src="js/shell.js"></script>
 <script>
 (function () {
   'use strict';
-  if (!window.Shell) return; // guard redirected to login
-
-  // rule_admin_only_user_mgmt — Members are bounced to the dashboard.
-  if (Shell.user.role !== 'admin') {
+  if (!window.Shell) return;
+  Shell.ready.then(function () {
+  if (!Shell.isSystemAdmin) {
     window.location.replace('dashboard.html');
     return;
   }
@@ -541,6 +541,7 @@ tr.row-inactive .avatar{opacity:.6}
   });
 
   loadUsers();
+  });
 })();
 </script>
 </body>

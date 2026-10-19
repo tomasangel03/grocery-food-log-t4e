@@ -19,10 +19,11 @@ function report(pass, label, extra) {
   }
 }
 
-async function req(method, path, { token, body } = {}) {
+async function req(method, path, { token, body, householdId } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (householdId) headers['X-Household-Id'] = householdId;
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
@@ -62,10 +63,26 @@ const cleanup = { userIds: [], tripIds: [] };
   const memberId = reg.json?.user?.id;
   if (memberId) cleanup.userIds.push(memberId);
 
+  const homes = await req('GET', '/v1/households', { token: adminToken });
+  const householdId = homes.json?.memberships?.[0]?.id;
+  const joinCode = homes.json?.memberships?.[0]?.join_code;
+  report(homes.status === 200 && !!householdId && String(joinCode || '').trim().length === 8,
+    'households — admin has a household with an 8-character code',
+    `status=${homes.status}`);
+  const joined = await req('POST', '/v1/households/join', {
+    token: memberToken,
+    householdId,
+    body: { code: String(joinCode || '').trim() }
+  });
+  report(joined.status === 201 && joined.json?.household?.role === 'member',
+    'households — new member joins with the code',
+    `status=${joined.status} body=${JSON.stringify(joined.json)}`);
+
   // ── POST /v1/shopping-trips ──────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10);
   const trip = await req('POST', '/v1/shopping-trips', {
     token: adminToken,
+    householdId,
     body: {
       trip_date: today,
       store_name: 'Smoke Mart',
@@ -87,6 +104,7 @@ const cleanup = { userIds: [], tripIds: [] };
   const bread = trip.json?.items?.[1];
   const partial = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 1, note: 'breakfast' }
   });
   report(partial.status === 200 && partial.json?.item?.status === 'available'
@@ -95,6 +113,7 @@ const cleanup = { userIds: [], tripIds: [] };
     `status=${partial.status} body=${JSON.stringify(partial.json)}`);
   const finish = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 1 }
   });
   report(finish.status === 200 && finish.json?.item?.status === 'consumed'
@@ -103,6 +122,7 @@ const cleanup = { userIds: [], tripIds: [] };
     `status=${finish.status} body=${JSON.stringify(finish.json)}`);
   const consumeAgain = await req('PATCH', `/v1/food-items/${milk?.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 1 }
   });
   report(consumeAgain.status === 409,
@@ -110,19 +130,20 @@ const cleanup = { userIds: [], tripIds: [] };
     `status=${consumeAgain.status}`);
   const tooMuch = await req('PATCH', `/v1/food-items/${bread?.id}/consume`, {
     token: memberToken,
+    householdId,
     body: { quantity: 5 }
   });
   report(tooMuch.status === 400,
     'consume — amount above what is left is rejected with 400',
     `status=${tooMuch.status}`);
-  const priced = await req('GET', '/v1/food-items?status=all&price=3&priceOp=gte', { token: adminToken });
+  const priced = await req('GET', '/v1/food-items?status=all&price=3&priceOp=gte', { token: adminToken, householdId });
   const pricedIds = (priced.json?.items || []).map((item) => item.id);
   report(priced.status === 200 && pricedIds.includes(milk?.id) && !pricedIds.includes(bread?.id),
     'price filter — gte 3 keeps the 3.50 item and drops the 2.25 item',
     `status=${priced.status}`);
 
   // ── dashboard summary ────────────────────────────────────────────
-  const dash = await req('GET', '/v1/dashboard/summary', { token: adminToken });
+  const dash = await req('GET', '/v1/dashboard/summary', { token: adminToken, householdId });
   report(dash.status === 200
       && Array.isArray(dash.json?.recent_items)
       && Array.isArray(dash.json?.inventory_by_unit)
@@ -133,11 +154,11 @@ const cleanup = { userIds: [], tripIds: [] };
     `status=${dash.status} body=${JSON.stringify(dash.json)}`);
 
   // ── activity-log ─────────────────────────────────────────────────
-  const alAdmin = await req('GET', '/v1/activity-log', { token: adminToken });
+  const alAdmin = await req('GET', '/v1/activity-log', { token: adminToken, householdId });
   report(alAdmin.status === 200 && Array.isArray(alAdmin.json?.entries) && alAdmin.json.entries.length > 0,
     'activity-log — GET /v1/activity-log returns 200 with entries (admin)',
     `status=${alAdmin.status}`);
-  const alMember = await req('GET', '/v1/activity-log', { token: memberToken });
+  const alMember = await req('GET', '/v1/activity-log', { token: memberToken, householdId });
   report(alMember.status === 403,
     'activity-log — member is rejected with 403',
     `status=${alMember.status}`);
@@ -162,6 +183,7 @@ const cleanup = { userIds: [], tripIds: [] };
   }
   for (const uid of cleanup.userIds) {
     await pool.query('DELETE FROM activity_logs WHERE user_id = ? OR entity_id = ?', [uid, uid]);
+    await pool.query('DELETE FROM household_members WHERE user_id = ?', [uid]);
     await pool.query('DELETE FROM users WHERE uuid = ?', [uid]);
   }
   await pool.end();

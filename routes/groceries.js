@@ -2,12 +2,38 @@
 const express = require('express');
 const crypto = require('crypto');
 const pool = require('../db');
-const { verifyToken, requireAdmin } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
+const { requireHousehold, requireHouseholdStaff } = require('../middleware/household');
 
 const router = express.Router();
 
-// All grocery/inventory routes require an authenticated user
-router.use(verifyToken);
+// Grocery routes require a household. Other /v1 routes mounted later must still
+// be able to run when this router does not handle the path.
+router.use(verifyToken, (req, res, next) => {
+  if (req.path.startsWith('/shopping-trips') || req.path.startsWith('/food-items')) {
+    return requireHousehold(req, res, next);
+  }
+  return next();
+});
+
+function lockHouseholdItem(conn, itemId, householdId) {
+  return conn.query(
+    `SELECT fi.id, fi.name, fi.unit, fi.status, fi.quantity, fi.quantity_remaining, fi.note
+       FROM food_items fi
+       JOIN shopping_trips st ON st.id = fi.shopping_trip_id
+      WHERE fi.id = ? AND st.household_id = ?
+      FOR UPDATE OF fi`,
+    [itemId, householdId]
+  );
+}
+
+function logHouseholdActivity(conn, userId, householdId, actionType, description, entityType, entityId) {
+  return conn.query(
+    `INSERT INTO activity_logs (id, user_id, household_id, action_type, action_description, entity_type, entity_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [crypto.randomUUID(), userId, householdId, actionType, description, entityType, entityId]
+  );
+}
 
 const VALID_UNITS = ['kg', 'g', 'L', 'ml', 'pieces', 'pack'];
 
@@ -94,8 +120,8 @@ router.post('/shopping-trips', async (req, res) => {
     await conn.beginTransaction();
 
     await conn.query(
-      'INSERT INTO shopping_trips (id, user_id, trip_date, store_name, total_amount) VALUES (?, ?, ?, ?, ?)',
-      [tripId, req.user.id, trip_date, store_name ? String(store_name).trim() : null, totalAmount.toFixed(2)]
+      'INSERT INTO shopping_trips (id, user_id, household_id, trip_date, store_name, total_amount) VALUES (?, ?, ?, ?, ?, ?)',
+      [tripId, req.user.id, req.household.id, trip_date, store_name ? String(store_name).trim() : null, totalAmount.toFixed(2)]
     );
 
     const createdItems = [];
@@ -123,15 +149,14 @@ router.post('/shopping-trips', async (req, res) => {
     }
 
     // evt_activity_on_shopping — "X added N items on date"
-    await conn.query(
-      `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
-       VALUES (?, ?, 'add_shopping', ?, 'shopping_trip', ?)`,
-      [
-        crypto.randomUUID(),
-        req.user.id,
-        `${req.user.username} added ${items.length} item${items.length === 1 ? '' : 's'} on ${trip_date}`,
-        tripId
-      ]
+    await logHouseholdActivity(
+      conn,
+      req.user.id,
+      req.household.id,
+      'add_shopping',
+      `${req.user.username} added ${items.length} item${items.length === 1 ? '' : 's'} on ${trip_date}`,
+      'shopping_trip',
+      tripId
     );
 
     await conn.commit();
@@ -171,8 +196,8 @@ router.get('/food-items', async (req, res) => {
       return res.status(400).json({ error: "status must be 'available', 'consumed' or 'all'" });
     }
 
-    const where = [];
-    const params = [];
+    const where = ['st.household_id = ?'];
+    const params = [req.household.id];
 
     if (status !== 'all') {
       where.push('fi.status = ?');
@@ -295,10 +320,7 @@ router.patch('/food-items/:id/consume', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const [rows] = await conn.query(
-      'SELECT id, name, unit, status, quantity_remaining FROM food_items WHERE id = ? FOR UPDATE',
-      [req.params.id]
-    );
+    const [rows] = await lockHouseholdItem(conn, req.params.id, req.household.id);
     if (rows.length === 0) {
       await conn.rollback();
       return res.status(404).json({ error: 'Food item not found' });
@@ -347,15 +369,14 @@ router.patch('/food-items/:id/consume', async (req, res) => {
       ? 'none left'
       : `${centsToAmount(newRemCents)} ${item.unit} left`;
     const noteBit = note ? ` Note: ${note.length > 80 ? `${note.slice(0, 80)}…` : note}` : '';
-    await conn.query(
-      `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
-       VALUES (?, ?, 'consume_item', ?, 'food_item', ?)`,
-      [
-        crypto.randomUUID(),
-        req.user.id,
-        `${req.user.username} consumed ${centsToAmount(qtyCents)} ${item.unit} of "${item.name}" (${leftLabel}).${noteBit}`,
-        item.id
-      ]
+    await logHouseholdActivity(
+      conn,
+      req.user.id,
+      req.household.id,
+      'consume_item',
+      `${req.user.username} consumed ${centsToAmount(qtyCents)} ${item.unit} of "${item.name}" (${leftLabel}).${noteBit}`,
+      'food_item',
+      item.id
     );
 
     await conn.commit();
@@ -404,10 +425,7 @@ router.patch('/food-items/:id/note', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const [rows] = await conn.query(
-      'SELECT id, name, status, note FROM food_items WHERE id = ? FOR UPDATE',
-      [req.params.id]
-    );
+    const [rows] = await lockHouseholdItem(conn, req.params.id, req.household.id);
     if (rows.length === 0) {
       await conn.rollback();
       return res.status(404).json({ error: 'Food item not found' });
@@ -435,11 +453,7 @@ router.patch('/food-items/:id/note', async (req, res) => {
       `${req.user.username} updated the note on "${item.name}": ` +
       `"${previous ? shorten(previous) : '(empty)'}" → "${noteValue ? shorten(noteValue) : '(empty)'}"`;
 
-    await conn.query(
-      `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
-       VALUES (?, ?, 'edit_note', ?, 'food_item', ?)`,
-      [crypto.randomUUID(), req.user.id, description, item.id]
-    );
+    await logHouseholdActivity(conn, req.user.id, req.household.id, 'edit_note', description, 'food_item', item.id);
 
     await conn.commit();
 
@@ -463,7 +477,7 @@ router.patch('/food-items/:id/note', async (req, res) => {
  * Admin-only edit (rule_admin_only_edit) of name/quantity/price.
  * Writes an edit_item activity entry.
  */
-router.put('/food-items/:id', requireAdmin, async (req, res) => {
+router.put('/food-items/:id', requireHouseholdStaff, async (req, res) => {
   const { name, quantity, price } = req.body || {};
 
   const sets = [];
@@ -506,10 +520,7 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const [rows] = await conn.query(
-      'SELECT id, name, status, quantity, quantity_remaining FROM food_items WHERE id = ? FOR UPDATE',
-      [req.params.id]
-    );
+    const [rows] = await lockHouseholdItem(conn, req.params.id, req.household.id);
     if (rows.length === 0) {
       await conn.rollback();
       return res.status(404).json({ error: 'Food item not found' });
@@ -547,15 +558,14 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
       [...params, original.id]
     );
 
-    await conn.query(
-      `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
-       VALUES (?, ?, 'edit_item', ?, 'food_item', ?)`,
-      [
-        crypto.randomUUID(),
-        req.user.id,
-        `${req.user.username} edited "${original.name}" (${changes.join(', ')})`,
-        original.id
-      ]
+    await logHouseholdActivity(
+      conn,
+      req.user.id,
+      req.household.id,
+      'edit_item',
+      `${req.user.username} edited "${original.name}" (${changes.join(', ')})`,
+      'food_item',
+      original.id
     );
 
     await conn.commit();
@@ -581,15 +591,12 @@ router.put('/food-items/:id', requireAdmin, async (req, res) => {
  * Admin-only removal (rule_admin_only_edit — "edit or remove a food item entry").
  * Writes a remove_item activity entry.
  */
-router.delete('/food-items/:id', requireAdmin, async (req, res) => {
+router.delete('/food-items/:id', requireHouseholdStaff, async (req, res) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    const [rows] = await conn.query(
-      'SELECT id, name FROM food_items WHERE id = ? FOR UPDATE',
-      [req.params.id]
-    );
+    const [rows] = await lockHouseholdItem(conn, req.params.id, req.household.id);
     if (rows.length === 0) {
       await conn.rollback();
       return res.status(404).json({ error: 'Food item not found' });
@@ -598,10 +605,14 @@ router.delete('/food-items/:id', requireAdmin, async (req, res) => {
 
     await conn.query('DELETE FROM food_items WHERE id = ?', [item.id]);
 
-    await conn.query(
-      `INSERT INTO activity_logs (id, user_id, action_type, action_description, entity_type, entity_id)
-       VALUES (?, ?, 'remove_item', ?, 'food_item', ?)`,
-      [crypto.randomUUID(), req.user.id, `${req.user.username} removed "${item.name}"`, item.id]
+    await logHouseholdActivity(
+      conn,
+      req.user.id,
+      req.household.id,
+      'remove_item',
+      `${req.user.username} removed "${item.name}"`,
+      'food_item',
+      item.id
     );
 
     await conn.commit();

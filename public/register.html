@@ -193,7 +193,13 @@
         if (result.ok && result.data.token) {
           localStorage.setItem('hgfl_token', result.data.token);
           localStorage.setItem('hgfl_user', JSON.stringify(result.data.user || {}));
-          window.location.href = 'dashboard.html';
+          localStorage.removeItem('hgfl_preview');
+          localStorage.removeItem('hgfl_preview_state');
+          var next = new URLSearchParams(window.location.search).get('next') || '';
+          var saved = sessionStorage.getItem('hgfl_join_code');
+          if (/^(join|onboarding)\.html(\?[\w=&%.-]+)?$/.test(next)) window.location.href = next;
+          else if (saved) window.location.href = 'join.html?code=' + encodeURIComponent(saved);
+          else window.location.href = 'onboarding.html';
           return;
         }
         // Server-side validation errors: prefer the first field-level message

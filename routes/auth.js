@@ -18,7 +18,12 @@ const BCRYPT_SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
 /** Sign a session JWT carrying the user id and role (per step_auth_session). */
 function signToken(user) {
   return jwt.sign(
-    { id: user.uuid, role: user.role, username: user.username },
+    {
+      id: user.uuid,
+      role: user.role,
+      platform_role: user.platform_role || 'user',
+      username: user.username
+    },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -33,6 +38,7 @@ function publicUser(user) {
     first_name: user.first_name,
     last_name: user.last_name,
     role: user.role,
+    platform_role: user.platform_role || 'user',
     auth_provider: user.auth_provider,
     is_active: !!user.is_active
   };
@@ -85,7 +91,7 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      'SELECT uuid, username, email, password_hash, role, first_name, last_name, auth_provider, is_active FROM users WHERE username = ? LIMIT 1',
+      'SELECT uuid, username, email, password_hash, role, platform_role, first_name, last_name, auth_provider, is_active FROM users WHERE username = ? LIMIT 1',
       [username]
     );
     const user = rows[0];
@@ -185,6 +191,7 @@ router.post('/register', async (req, res) => {
       username,
       email: emailNorm,
       role: 'member',
+      platform_role: 'user',
       first_name: String(firstName).trim(),
       last_name: String(lastName).trim(),
       auth_provider: 'local',
@@ -226,7 +233,7 @@ function pageUrl(pathAndQuery) {
 }
 
 const USER_SELECT_FIELDS =
-  'uuid, username, email, password_hash, google_id, auth_provider, role, first_name, last_name, is_active';
+  'uuid, username, email, password_hash, google_id, auth_provider, role, platform_role, first_name, last_name, is_active';
 
 /**
  * GET /v1/auth/google
@@ -343,6 +350,7 @@ router.get('/google/callback', async (req, res) => {
         google_id: googleId,
         auth_provider: 'google',
         role: 'member',
+        platform_role: 'user',
         first_name: firstName,
         last_name: lastName,
         is_active: 1
@@ -360,6 +368,30 @@ router.get('/google/callback', async (req, res) => {
   } catch (err) {
     console.error('GET /v1/auth/google/callback error:', err);
     return loginError('google_failed');
+  }
+});
+
+const { verifyToken } = require('../middleware/auth');
+
+/**
+ * GET /v1/auth/me
+ * Fresh profile, including platform_role, for the signed-in user.
+ */
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT uuid, username, email, role, platform_role, first_name, last_name, auth_provider, is_active
+         FROM users WHERE uuid = ? LIMIT 1`,
+      [req.user.id]
+    );
+    const user = rows[0];
+    if (!user || !user.is_active) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    return res.json({ user: publicUser(user) });
+  } catch (err) {
+    console.error('GET /v1/auth/me error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

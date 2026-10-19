@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up your household — FoodLog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/households.css">
+</head>
+<body>
+<div class="login-shell">
+  <div class="login-card wide-card" id="gate_card">
+    <div class="login-brand">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      </div>
+      <div class="logo-name">FoodLog</div>
+    </div>
+    <button type="button" class="back-link" id="back_link" hidden>Back to your households</button>
+    <div id="preview_flag" class="preview-flag" hidden>Design preview — nothing is saved</div>
+    <div class="login-header" id="gate_header">
+      <h1>Create or join a household</h1>
+      <p>Groceries stay inside a household. Name one to become its admin, or enter a code to join.</p>
+    </div>
+    <div class="login-error" id="gate_error" role="alert" hidden>
+      <span id="gate_error_text"></span>
+    </div>
+
+    <div id="step_choose">
+      <div class="choice-grid">
+        <button class="choice-card" type="button" id="choose_create">
+          <h2>Create a household</h2>
+          <p>You become the admin. The app assigns an 8-character code you can share.</p>
+        </button>
+        <button class="choice-card" type="button" id="choose_join">
+          <h2>Join with a code</h2>
+          <p>Someone already has a household. Use the code they sent you.</p>
+        </button>
+      </div>
+    </div>
+
+    <form class="login-form" id="create_form" hidden>
+      <div class="field">
+        <label for="hh_name">Household name</label>
+        <input id="hh_name" name="name" type="text" maxlength="40" placeholder="e.g. Home, Parents, Apartment" required>
+      </div>
+      <p class="hh-note">The name is a label so you can tell your households apart. It does not have to be unique. You do not choose the code.</p>
+      <button class="btn btn-primary" type="submit">Create household</button>
+      <button class="btn btn-secondary" type="button" id="create_back">Back</button>
+    </form>
+
+    <div id="step_created" hidden>
+      <p class="hh-note">You are the admin of <b id="created_name"></b>. Share this code or the invite link. The code cannot be changed.</p>
+      <div class="code-hero" id="created_code"></div>
+      <div class="invite-row">
+        <input id="invite_link" type="text" readonly>
+        <button class="btn btn-secondary" type="button" id="copy_code">Copy code</button>
+        <button class="btn btn-secondary" type="button" id="copy_link">Copy link</button>
+      </div>
+      <div class="stack-actions">
+        <button class="btn btn-primary" type="button" id="go_household">Go to household</button>
+      </div>
+    </div>
+
+    <form class="login-form" id="join_form" hidden>
+      <div class="field">
+        <label for="join_code">8-character code</label>
+        <input id="join_code" name="code" type="text" maxlength="8" autocapitalize="characters" placeholder="K7M2QP4X" required>
+      </div>
+      <p class="hh-note" id="join_hint" hidden>In this preview, code K7M2QP4X joins Home.</p>
+      <button class="btn btn-primary" type="submit" id="lookup_btn">Look up household</button>
+      <button class="btn btn-secondary" type="button" id="join_back">Back</button>
+    </form>
+
+    <div id="step_confirm" hidden>
+      <p class="hh-note">Join <b id="confirm_name"></b> as a member? You will see only this household’s groceries.</p>
+      <div class="stack-actions">
+        <button class="btn btn-primary" type="button" id="confirm_join">Join household</button>
+        <button class="btn btn-secondary" type="button" id="confirm_back">Use a different code</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/household-preview.js"></script>
+<script>
+(function () {
+  'use strict';
+  var params = new URLSearchParams(window.location.search);
+  var adding = params.get('add') === '1';
+  var preview = HouseholdsClient.isPreview();
+  var pending = null;
+
+  if (!preview && !localStorage.getItem('hgfl_token')) {
+    window.location.replace('login.html');
+    return;
+  }
+  if (preview) document.getElementById('preview_flag').hidden = false;
+  if (adding) document.getElementById('back_link').hidden = false;
+
+  var errorBox = document.getElementById('gate_error');
+  var errorText = document.getElementById('gate_error_text');
+  function showError(msg) { errorText.textContent = msg; errorBox.hidden = false; }
+  function hideError() { errorBox.hidden = true; }
+  function show(id) {
+    ['step_choose', 'create_form', 'step_created', 'join_form', 'step_confirm'].forEach(function (key) {
+      document.getElementById(key).hidden = key !== id;
+    });
+  }
+
+  document.getElementById('back_link').addEventListener('click', function () {
+    window.location.href = 'households.html';
+  });
+  document.getElementById('choose_create').addEventListener('click', function () { hideError(); show('create_form'); });
+  document.getElementById('choose_join').addEventListener('click', function () {
+    hideError();
+    show('join_form');
+    if (preview) document.getElementById('join_hint').hidden = false;
+  });
+  document.getElementById('create_back').addEventListener('click', function () { show('step_choose'); });
+  document.getElementById('join_back').addEventListener('click', function () { show('step_choose'); });
+  document.getElementById('confirm_back').addEventListener('click', function () { show('join_form'); });
+
+  document.getElementById('create_form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideError();
+    var name = document.getElementById('hh_name').value;
+    HouseholdsClient.create(name).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not create the household'); return; }
+      var home = result.data.household;
+      HouseholdsClient.setActive(home.id);
+      document.getElementById('created_name').textContent = home.name;
+      document.getElementById('created_code').textContent = home.join_code;
+      document.getElementById('invite_link').value = new URL('join.html?code=' + encodeURIComponent(home.join_code), window.location.href).href;
+      show('step_created');
+    }).catch(function () { showError('Could not reach the server.'); });
+  });
+
+  function copyText(value, btn) {
+    navigator.clipboard.writeText(value).then(function () {
+      var previous = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = previous; }, 1200);
+    });
+  }
+  document.getElementById('copy_code').addEventListener('click', function () {
+    copyText(document.getElementById('created_code').textContent, this);
+  });
+  document.getElementById('copy_link').addEventListener('click', function () {
+    copyText(document.getElementById('invite_link').value, this);
+  });
+  document.getElementById('go_household').addEventListener('click', function () {
+    window.location.href = 'dashboard.html';
+  });
+
+  document.getElementById('join_form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideError();
+    var code = document.getElementById('join_code').value.trim().toUpperCase();
+    HouseholdsClient.lookup(code).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'No household uses that code'); return; }
+      pending = { code: code, name: result.data.household.name };
+      document.getElementById('confirm_name').textContent = pending.name;
+      show('step_confirm');
+    }).catch(function () { showError('Could not reach the server.'); });
+  });
+
+  document.getElementById('confirm_join').addEventListener('click', function () {
+    if (!pending) return;
+    hideError();
+    HouseholdsClient.join(pending.code).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not join'); show('join_form'); return; }
+      HouseholdsClient.setActive(result.data.household.id);
+      window.location.href = 'dashboard.html';
+    }).catch(function () { showError('Could not reach the server.'); });
+  });
+})();
+</script>
+</body>
+</html>

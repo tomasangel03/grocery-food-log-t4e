@@ -173,7 +173,10 @@
         if (result.ok && result.data.token) {
           localStorage.setItem('hgfl_token', result.data.token);
           localStorage.setItem('hgfl_user', JSON.stringify(result.data.user || {}));
-          window.location.href = 'dashboard.html';
+          localStorage.removeItem('hgfl_preview');
+          localStorage.removeItem('hgfl_preview_state');
+          var next = new URLSearchParams(window.location.search).get('next') || '';
+          window.location.href = /^(join|onboarding)\.html(\?[\w=&%.-]+)?$/.test(next) ? next : 'dashboard.html';
           return;
         }
         if (result.status === 403) {

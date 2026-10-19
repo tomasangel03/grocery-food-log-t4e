@@ -326,13 +326,14 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
   <span id="fl_toast_msg"></span>
 </div>
 
+<script src="js/household-preview.js"></script>
 <script src="js/shell.js"></script>
 <script>
 (function () {
   'use strict';
-  if (!window.Shell) return; // guard redirected to login
-
-  var isAdmin = Shell.user.role === 'admin';
+  if (!window.Shell) return;
+  Shell.ready.then(function () {
+  var isAdmin = !!Shell.canEditItems;
   var allItems = [];      // last fetched set (status=all + server-side filters)
   var flStatus = 'available';
   var flDefaultStatus = 'available'; // becomes 'all' when FEATURE_SHOW_CONSUMED_DEFAULT is on
@@ -423,12 +424,12 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
   }
 
   // ---- Member filter: populated from /v1/users for admins only ----
-  if (isAdmin) {
-    authFetch('v1/users')
-      .then(function (res) { return res.ok ? res.json() : { users: [] }; })
+  if (isAdmin && Shell.household) {
+    authFetch('v1/households/' + encodeURIComponent(Shell.household.id) + '/members')
+      .then(function (res) { return res.ok ? res.json() : { members: [] }; })
       .then(function (data) {
         var sel = document.getElementById('log_filter_member');
-        (data.users || []).forEach(function (u) {
+        (data.members || data.users || []).forEach(function (u) {
           var opt = document.createElement('option');
           opt.value = u.id;
           opt.textContent = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
@@ -769,6 +770,7 @@ tr.row-consumed .item-icon{background:#f2f4f7;color:var(--color-text-muted)}
   });
 
   loadItems();
+  });
 })();
 </script>
 </body>

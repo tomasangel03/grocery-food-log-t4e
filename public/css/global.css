@@ -107,6 +107,48 @@ button{font:inherit;cursor:pointer;}
 .sidebar-toggle{display:none;}
 .page-body{padding:28px;flex:1;min-width:0;}
 
+/* Household switcher in the top bar */
+.hh-switch{position:relative;}
+.hh-switch-btn{
+  display:inline-flex;align-items:center;gap:8px;max-width:280px;
+  background:var(--color-surface-2);border:1px solid var(--color-border);
+  border-radius:var(--radius-sm);padding:7px 10px;color:var(--color-text);
+}
+.hh-switch-btn:hover{border-color:#c9d4dc;}
+.hh-switch-name{font:600 13.5px var(--font-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hh-menu{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:320px;max-width:80vw;
+  background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow-hover);padding:6px;
+}
+.hh-menu-label{
+  font:600 10.5px var(--font-body);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--color-text-muted);padding:8px 8px 4px;
+}
+.hh-menu-empty{padding:6px 8px 8px;font:400 12.5px var(--font-body);color:var(--color-text-muted);}
+.hh-option{
+  width:100%;display:flex;align-items:center;gap:8px;text-align:left;
+  background:transparent;border:0;border-radius:8px;padding:8px;
+}
+.hh-option:hover,.hh-option.active{background:var(--color-primary-soft);}
+.hh-option-main{display:flex;flex-direction:column;min-width:0;flex:1;}
+.hh-option-name{font:600 13px var(--font-body);color:var(--color-text);}
+.hh-code{font:500 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.04em;color:var(--color-text-muted);}
+.hh-role{
+  font:600 10.5px var(--font-body);color:var(--color-primary);
+  background:var(--color-primary-soft);border-radius:999px;padding:2px 7px;white-space:nowrap;
+}
+.hh-check{color:var(--color-primary);font-weight:700;}
+.hh-add{
+  display:block;margin-top:4px;padding:8px;border-top:1px solid var(--color-border);
+  font:600 13px var(--font-body);color:var(--color-primary);
+}
+.hh-add.disabled{color:var(--color-text-muted);cursor:not-allowed;font-weight:500;}
+.preview-banner{
+  background:#fffaeb;color:#b54708;border-bottom:1px solid #fedf89;
+  padding:8px 28px;font:500 12.5px var(--font-body);
+}
+
 /* Backdrop for the mobile drawer */
 .sidebar-backdrop{display:none;}
 

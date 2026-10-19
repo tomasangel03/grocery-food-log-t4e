@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Households — FoodLog</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/households.css">
+</head>
+<body data-page="households">
+<div class="app-shell" id="appShell">
+  <main class="page-main">
+    <div class="page-body">
+      <div class="hh-page-head">
+        <div>
+          <h1>Households</h1>
+          <p id="hh_count">The name is how you tell your households apart. The code is how other people join.</p>
+        </div>
+        <a class="btn btn-primary" id="hh_add" href="onboarding.html?add=1">Add household</a>
+      </div>
+      <div class="login-error" id="hh_error" role="alert" hidden style="margin-bottom:16px"><span id="hh_error_text"></span></div>
+      <div class="hh-grid" id="hh_grid"></div>
+      <section class="card panel" id="member_panel" hidden>
+        <div class="card-head">
+          <div>
+            <h3 id="panel_title">Members</h3>
+            <div class="card-desc" id="panel_desc"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" type="button" id="panel_close">Close</button>
+        </div>
+        <div id="rename_box" hidden>
+          <form class="rename-row" id="rename_form">
+            <input id="rename_input" type="text" maxlength="40" aria-label="Household name">
+            <button class="btn btn-secondary btn-sm" type="submit">Save name</button>
+          </form>
+        </div>
+        <div class="member-list" id="member_list"></div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="js/household-preview.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  'use strict';
+  if (!window.Shell) return;
+
+  var openId = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function roleLabel(role) {
+    if (role === 'admin') return 'Admin';
+    if (role === 'co_admin') return 'Co-admin';
+    if (role === 'member') return 'Member';
+    return 'Viewing';
+  }
+  function showError(msg) {
+    var box = document.getElementById('hh_error');
+    document.getElementById('hh_error_text').textContent = msg;
+    box.hidden = !msg;
+  }
+  function inviteLink(code) {
+    return new URL('join.html?code=' + encodeURIComponent(code), window.location.href).href;
+  }
+  function copy(value) {
+    if (navigator.clipboard) navigator.clipboard.writeText(value);
+  }
+
+  function cards() {
+    var data = Shell.households || { memberships: [], all: [] };
+    var seen = {};
+    var list = [];
+    (data.memberships || []).forEach(function (home) { seen[home.id] = true; list.push(home); });
+    if (Shell.isSystemAdmin) {
+      (data.all || []).forEach(function (home) { if (!seen[home.id]) list.push(home); });
+    }
+    return list;
+  }
+
+  function render() {
+    var data = Shell.households || { memberships: [], cap: 3, membership_count: 0 };
+    var count = data.membership_count || 0;
+    var cap = data.cap || 3;
+    document.getElementById('hh_count').textContent = 'You are in ' + count + ' of ' + cap + ' households. The name tells them apart. The code is only for joining.';
+    var add = document.getElementById('hh_add');
+    if (count >= cap) {
+      add.classList.add('btn');
+      add.setAttribute('aria-disabled', 'true');
+      add.removeAttribute('href');
+      add.style.pointerEvents = 'none';
+      add.style.opacity = '0.55';
+      add.textContent = 'In 3 households';
+      add.title = 'Leave a household to free a slot.';
+    }
+    var html = '';
+    cards().forEach(function (home) {
+      var staff = Shell.isSystemAdmin || home.role === 'admin' || home.role === 'co_admin';
+      var code = staff && home.join_code
+        ? '<div class="hh-code-line">' + esc(home.join_code) + '</div>'
+        : '';
+      html += '<article class="card hh-card">' +
+        '<div><h2>' + esc(home.name) + '</h2>' +
+          '<div class="hh-meta"><span class="pill pill-neutral">' + esc(roleLabel(home.role)) + '</span>' +
+          '<span>' + home.member_count + (home.member_count === 1 ? ' person' : ' people') + '</span></div></div>' +
+        code +
+        '<div class="hh-actions">' +
+          '<button class="btn btn-secondary btn-sm" type="button" data-open="' + esc(home.id) + '">Members</button>' +
+          (staff && home.join_code ? '<button class="btn btn-ghost btn-sm" type="button" data-copy-code="' + esc(home.join_code) + '">Copy code</button>' : '') +
+          (staff && home.join_code ? '<button class="btn btn-ghost btn-sm" type="button" data-copy-link="' + esc(home.join_code) + '">Copy invite link</button>' : '') +
+          (home.is_member && home.role !== 'admin' ? '<button class="btn btn-danger-ghost btn-sm" type="button" data-leave="' + esc(home.id) + '">Leave</button>' : '') +
+          (home.role === 'admin' && home.member_count === 1 ? '<button class="btn btn-danger-ghost btn-sm" type="button" data-delete="' + esc(home.id) + '">Delete</button>' : '') +
+        '</div>' +
+        (home.role === 'admin' && home.member_count > 1 ? '<p class="hh-note">Transfer the admin role before you can leave.</p>' : '') +
+      '</article>';
+    });
+    if (!html) html = '<div class="card"><p class="hh-note">You are not in a household yet.</p></div>';
+    document.getElementById('hh_grid').innerHTML = html;
+  }
+
+  function refresh() {
+    return HouseholdsClient.list().then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not load households'); return; }
+      Shell.households = result.data;
+      Shell.isSystemAdmin = result.data.platform_role === 'system_admin';
+      render();
+      if (openId) loadMembers(openId);
+    });
+  }
+
+  function loadMembers(id) {
+    openId = id;
+    var home = cards().filter(function (h) { return h.id === id; })[0];
+    if (!home) { document.getElementById('member_panel').hidden = true; return; }
+    document.getElementById('panel_title').textContent = home.name;
+    var callerIsFounder = home.role === 'admin' || (Shell.isSystemAdmin && home.role === 'admin');
+    var canAppoint = home.role === 'admin' || Shell.isSystemAdmin;
+    var canRemove = Shell.isSystemAdmin || home.role === 'admin' || home.role === 'co_admin';
+    document.getElementById('panel_desc').textContent = canAppoint
+      ? 'You can appoint one co-admin. They can invite and remove members, and they can see the activity log. They cannot change your admin role.'
+      : (home.role === 'co_admin'
+        ? 'You can invite people with the code and remove members. You cannot change the admin.'
+        : 'You can see who shares this household.');
+    var rename = document.getElementById('rename_box');
+    rename.hidden = !canAppoint;
+    if (canAppoint) document.getElementById('rename_input').value = home.name;
+    HouseholdsClient.members(id).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not load members'); return; }
+      var coadminTaken = (result.data.members || []).some(function (m) { return m.role === 'co_admin'; });
+      var html = '';
+      (result.data.members || []).forEach(function (m) {
+        var name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || m.username;
+        var actions = '';
+        if (canAppoint && m.role === 'member') {
+          actions += '<button class="btn btn-secondary btn-sm" type="button" data-coadmin="' + esc(m.id) + '"' +
+            (coadminTaken ? ' disabled title="Return the current co-admin to member first"' : '') +
+            '>Make co-admin</button>';
+        }
+        if (canAppoint && m.role === 'co_admin') {
+          actions += '<button class="btn btn-ghost btn-sm" type="button" data-demote="' + esc(m.id) + '">Return to member</button>';
+        }
+        if (canAppoint && m.role !== 'admin') {
+          actions += '<button class="btn btn-ghost btn-sm" type="button" data-transfer="' + esc(m.id) + '">Make admin</button>';
+        }
+        if (canRemove && m.role !== 'admin' && m.id !== Shell.user.id) {
+          actions += '<button class="btn btn-danger-ghost btn-sm" type="button" data-remove="' + esc(m.id) + '">Remove</button>';
+        }
+        html += '<div class="member-row"><div class="who"><b>' + esc(name) + '</b><span>@' + esc(m.username) + '</span></div>' +
+          '<span class="pill pill-neutral">' + esc(roleLabel(m.role)) + '</span>' + actions + '</div>';
+      });
+      document.getElementById('member_list').innerHTML = html || '<p class="hh-note">No members.</p>';
+      document.getElementById('member_panel').hidden = false;
+    });
+  }
+
+  document.getElementById('hh_grid').addEventListener('click', function (e) {
+    var t = e.target;
+    if (t.getAttribute('data-open')) loadMembers(t.getAttribute('data-open'));
+    if (t.getAttribute('data-copy-code')) copy(t.getAttribute('data-copy-code'));
+    if (t.getAttribute('data-copy-link')) copy(inviteLink(t.getAttribute('data-copy-link')));
+    if (t.getAttribute('data-leave')) {
+      var id = t.getAttribute('data-leave');
+      if (!window.confirm('Leave this household? You will lose access to its groceries, and a household slot opens up.')) return;
+      HouseholdsClient.leave(id).then(function (result) {
+        if (!result.ok) { showError(result.data.error || 'Could not leave'); return; }
+        showError('');
+        if (Shell.household && Shell.household.id === id) localStorage.removeItem('hgfl_household_id');
+        refresh();
+      });
+    }
+    if (t.getAttribute('data-delete')) {
+      var del = t.getAttribute('data-delete');
+      if (!window.confirm('Delete this household and its groceries? You are the only member.')) return;
+      HouseholdsClient.destroy(del).then(function (result) {
+        if (!result.ok) { showError(result.data.error || 'Could not delete'); return; }
+        if (Shell.household && Shell.household.id === del) localStorage.removeItem('hgfl_household_id');
+        openId = null;
+        document.getElementById('member_panel').hidden = true;
+        refresh();
+      });
+    }
+  });
+
+  document.getElementById('member_list').addEventListener('click', function (e) {
+    var t = e.target;
+    var id = openId;
+    function done(result) {
+      if (!result.ok) { showError(result.data.error || 'Could not update the member'); return; }
+      showError('');
+      refresh();
+    }
+    if (t.getAttribute('data-coadmin')) HouseholdsClient.setRole(id, t.getAttribute('data-coadmin'), 'co_admin').then(done);
+    if (t.getAttribute('data-demote')) HouseholdsClient.setRole(id, t.getAttribute('data-demote'), 'member').then(done);
+    if (t.getAttribute('data-remove')) {
+      if (!window.confirm('Remove this person? They lose access and a household slot opens for them.')) return;
+      HouseholdsClient.removeMember(id, t.getAttribute('data-remove')).then(done);
+    }
+    if (t.getAttribute('data-transfer')) {
+      if (!window.confirm('Make this person the household admin? You become a member and can then leave.')) return;
+      HouseholdsClient.transfer(id, t.getAttribute('data-transfer')).then(done);
+    }
+  });
+
+  document.getElementById('rename_form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    HouseholdsClient.rename(openId, document.getElementById('rename_input').value).then(function (result) {
+      if (!result.ok) { showError(result.data.error || 'Could not rename'); return; }
+      showError('');
+      refresh();
+    });
+  });
+  document.getElementById('panel_close').addEventListener('click', function () {
+    openId = null;
+    document.getElementById('member_panel').hidden = true;
+  });
+
+  Shell.ready.then(render);
+})();
+</script>
+</body>
+</html>
